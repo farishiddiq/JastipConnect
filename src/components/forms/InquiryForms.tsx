@@ -75,17 +75,17 @@ export function WeightInquiryDialog({
             <Field id="inq-kg" label="Perkiraan berat (kg)" required error={errors.kg} hint={`Biaya ${formatMoney(listing.pricePerKg, listing.currency)}/kg`}>
               <Input type="number" inputMode="decimal" min={0.1} step={0.1} max={remaining} value={kg} onChange={(e) => setKg(e.target.value)} placeholder="cth. 3" autoFocus />
             </Field>
-            <Field id="inq-items" label="Barang yang dititipkan" required error={errors.items} hint="Sebutkan jenis & jumlah. Jangan titip barang terlarang.">
+            <Field id="inq-items" label="Barang yang dititipkan" required error={errors.items} hint="Sebutkan jenis dan jumlah.">
               <Textarea value={items} onChange={(e) => setItems(e.target.value)} maxLength={500} placeholder="cth. Kurma 2 kg, cokelat 1 kg" />
             </Field>
-            <Field id="inq-note" label="Catatan untuk penyedia" hint="Opsional. Jangan bagikan alamat lengkap atau data pribadi di sini.">
+            <Field id="inq-note" label="Catatan untuk penyedia" hint="Opsional. Tanpa data pribadi.">
               <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} className="min-h-[72px]" />
             </Field>
             <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
               <span className="text-slate-500">Estimasi biaya jastip</span>
-              <span className="font-extrabold text-navy">{estimate ? formatMoney(estimate, listing.currency) : '—'}</span>
+              <span className="font-extrabold text-navy">{estimate ? formatMoney(estimate, listing.currency) : '-'}</span>
             </div>
-            <p className="text-xs text-slate-400">Pembayaran tidak diproses di platform demo ini. Kuota baru direservasi setelah penyedia menerima.</p>
+            <p className="text-xs text-slate-400">Kuota direservasi setelah penyedia menerima. Pembayaran di luar platform.</p>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -210,7 +210,7 @@ export function ShoppingOrderDialog({
         <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
             <DialogTitle>Ajukan Pesanan</DialogTitle>
-            <DialogDescription>Periksa jumlah produk, lalu kirim pesanan ke penyedia.</DialogDescription>
+            <DialogDescription>Periksa pesanan Anda.</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <ul className="divide-y divide-border rounded-2xl border border-border">
@@ -235,7 +235,7 @@ export function ShoppingOrderDialog({
                 );
               })}
             </ul>
-            <Field id="order-note" label="Catatan (warna, ukuran, varian)" hint="Opsional. Jangan bagikan data pribadi sensitif." error={error}>
+            <Field id="order-note" label="Catatan (warna, ukuran, varian)" hint="Opsional." error={error}>
               <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} className="min-h-[72px]" />
             </Field>
             <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
@@ -243,7 +243,7 @@ export function ShoppingOrderDialog({
               <span className="text-right font-extrabold text-navy">{formatMoneyGroups(totals)}</span>
             </div>
             <p className="text-xs text-slate-400">
-              Estimasi belum termasuk ongkir lokal. Tidak ada konversi kurs. Pembayaran diatur langsung dengan penyedia — tidak diproses oleh demo ini.
+              Belum termasuk ongkir. Pembayaran diatur langsung dengan penyedia.
             </p>
           </DialogBody>
           <DialogFooter>

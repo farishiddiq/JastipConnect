@@ -1,4 +1,4 @@
-import type { Result, User } from '@/types';
+import type { Result, ThemePreference, User } from '@/types';
 import { uuid } from '@/lib/utils';
 import { store } from './store';
 import { fail, nowIso, ok, SAVE_FAILED } from './helpers';
@@ -70,4 +70,8 @@ export function markNotificationsRead(userId: string) {
 
 export function markNotificationRead(id: string) {
   store.set('notifications', (prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+}
+
+export function setTheme(theme: ThemePreference) {
+  store.set('settings', (prev) => ({ ...prev, theme }));
 }

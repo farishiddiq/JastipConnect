@@ -1,19 +1,17 @@
 import type { Location } from '@/types';
 
-export type Country = { code: string; name: string; flag: string; cities: string[] };
+export type Country = { code: string; name: string; cities: string[] };
 
 /** Configurable corridor. Add countries or cities here. */
 export const COUNTRIES: Country[] = [
   {
     code: 'SA',
     name: 'Arab Saudi',
-    flag: '🇸🇦',
     cities: ['Riyadh', 'Jeddah', 'Makkah', 'Madinah', 'Dammam', 'Khobar', 'Taif'],
   },
   {
     code: 'ID',
     name: 'Indonesia',
-    flag: '🇮🇩',
     cities: ['Jakarta', 'Surabaya', 'Bandung', 'Medan', 'Makassar', 'Yogyakarta', 'Semarang', 'Mataram', 'Banda Aceh'],
   },
 ];
@@ -27,8 +25,15 @@ export function makeLocation(countryCode: string, city: string): Location {
   return { countryCode, country: c?.name ?? countryCode, city };
 }
 
-export function flagFor(code: string): string {
-  return getCountry(code)?.flag ?? '🌍';
+
+/** Airport codes for short route labels. Unknown cities fall back to three letters. */
+const CITY_CODES: Record<string, string> = {
+  Riyadh: 'RUH', Jeddah: 'JED', Makkah: 'MKK', Madinah: 'MED', Dammam: 'DMM', Khobar: 'KHB', Taif: 'TIF',
+  Jakarta: 'CGK', Surabaya: 'SUB', Bandung: 'BDO', Medan: 'KNO', Makassar: 'UPG', Yogyakarta: 'YIA',
+  Semarang: 'SRG', Mataram: 'LOP', 'Banda Aceh': 'BTJ',
+};
+export function cityCode(city: string): string {
+  return CITY_CODES[city] ?? city.slice(0, 3).toUpperCase();
 }
 
 export function sameLocation(a: Location, b: Location): boolean {
@@ -55,23 +60,6 @@ export const PRODUCT_CATEGORIES = [
   'Bumbu & Bahan Masak',
   'Lainnya',
 ] as const;
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  'Makanan & Camilan': '🍪',
-  Kurma: '🌴',
-  Cokelat: '🍫',
-  'Fashion Muslim': '🧕',
-  'Kosmetik & Perawatan': '💄',
-  'Wewangian non-alkohol': '🪔',
-  Suvenir: '🎁',
-  'Perlengkapan Ibadah': '📿',
-  'Bumbu & Bahan Masak': '🌶️',
-  Lainnya: '🛍️',
-};
-
-export function emojiForCategory(category: string): string {
-  return CATEGORY_EMOJI[category] ?? '🛍️';
-}
 
 export const HANDOVER_METHODS = [
   'Ketemuan di titik temu (COD lokasi)',

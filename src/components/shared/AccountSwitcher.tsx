@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       requireUser: (r) => {
         if (user) return user.id;
-        setReason(r ?? 'Pilih akun demo untuk melanjutkan.');
+        setReason(r ?? 'Pilih akun demo.');
         setOpen(true);
         return null;
       },
@@ -101,7 +101,7 @@ function AccountSwitcherDialog({ open, onOpenChange, reason }: { open: boolean; 
           <DialogTitle>{mode === 'pick' ? 'Pilih akun demo' : 'Buat profil demo lokal'}</DialogTitle>
           <DialogDescription>
             {reason ? <span className="font-medium text-navy">{reason} </span> : null}
-            Ini bukan login sungguhan — tanpa kata sandi. Semua data hanya tersimpan di browser ini.
+            Bukan login sungguhan. Data hanya di browser ini.
           </DialogDescription>
         </DialogHeader>
 
@@ -148,7 +148,7 @@ function AccountSwitcherDialog({ open, onOpenChange, reason }: { open: boolean; 
                 </Select>
               </Field>
               <p className="rounded-xl bg-slate-50 p-3 text-[13px] text-slate-500">
-                Kami tidak meminta kata sandi, nomor telepon, KTP/paspor, atau data pembayaran.
+                Tanpa kata sandi, KTP, atau data pembayaran.
               </p>
             </DialogBody>
           </form>

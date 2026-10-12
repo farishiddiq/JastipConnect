@@ -35,7 +35,7 @@ type Thread = {
 
 export function InboxPage() {
   usePageMeta('Inbox');
-  return <RequireUser reason="Pilih akun demo untuk melihat inquiry dan percakapan Anda.">{(user) => <Inbox me={user} />}</RequireUser>;
+  return <RequireUser reason="Pilih akun demo untuk membuka inbox.">{(user) => <Inbox me={user} />}</RequireUser>;
 }
 
 function useThreads(me: User): Thread[] {
@@ -95,7 +95,7 @@ function Inbox({ me }: { me: User }) {
           aria-label="Daftar percakapan"
         >
           <div className="space-y-3 border-b border-border p-4">
-            <h1 className="text-xl font-extrabold text-navy">Inbox</h1>
+            <h1 className="text-xl font-bold text-navy">Inbox</h1>
             {filterListing && (
               <div className="flex items-center gap-2 rounded-xl bg-teal-50 py-1.5 pl-3 pr-1 text-[13px] text-teal-900 ring-1 ring-teal-200">
                 <span className="min-w-0 flex-1 truncate">
@@ -129,7 +129,7 @@ function Inbox({ me }: { me: User }) {
                 <EmptyState
                   icon={<MessageCircle />}
                   title="Belum ada percakapan"
-                  description={tab === 'all' ? 'Inquiry yang Anda kirim atau terima akan muncul di sini.' : 'Tidak ada inquiry dengan status ini.'}
+                  description={tab === 'all' ? 'Inquiry Anda muncul di sini.' : 'Tidak ada inquiry dengan status ini.'}
                   action={
                     <Button asChild variant="outline" size="sm">
                       <Link to="/explore">Jelajahi listing</Link>
@@ -154,7 +154,7 @@ function Inbox({ me }: { me: User }) {
             )
           ) : (
             <div className="flex h-full items-center justify-center p-8">
-              <EmptyState icon={<MessageCircle />} title="Pilih percakapan" description="Setiap percakapan terhubung ke satu inquiry, lengkap dengan tombol aksi." className="max-w-sm border-0" />
+              <EmptyState icon={<MessageCircle />} title="Pilih percakapan" description="Percakapan terhubung ke satu inquiry." className="max-w-sm border-0" />
             </div>
           )}
         </section>
@@ -164,7 +164,7 @@ function Inbox({ me }: { me: User }) {
 }
 
 function ThreadItem({ thread: t, active, href }: { thread: Thread; active: boolean; href: string }) {
-  const preview = t.last ? (t.last.senderId === 'system' ? `ℹ️ ${t.last.body}` : t.last.body) : 'Belum ada pesan';
+  const preview = t.last ? (t.last.senderId === 'system' ? `Info: ${t.last.body}` : t.last.body) : 'Belum ada pesan';
   return (
     <li>
       <Link
@@ -188,7 +188,7 @@ function ThreadItem({ thread: t, active, href }: { thread: Thread; active: boole
             {t.inquiry && <InquiryStatusBadge status={t.inquiry.status} />}
             <p className={cn('min-w-0 flex-1 truncate text-[13px]', t.unread ? 'font-semibold text-navy' : 'text-slate-500')}>{preview}</p>
             {t.unread > 0 && (
-              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-teal-500 px-1.5 text-[11px] font-bold text-white" aria-label={`${t.unread} belum dibaca`}>
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-teal-700 px-1.5 text-[11px] font-bold text-white" aria-label={`${t.unread} belum dibaca`}>
                 {t.unread}
               </span>
             )}
@@ -205,7 +205,7 @@ function NoAccess({ backHref }: { backHref: string }) {
       <EmptyState
         icon={<Lock />}
         title="Percakapan tidak tersedia"
-        description="Percakapan ini tidak ditemukan atau Anda bukan pesertanya. Ganti ke akun demo yang terlibat untuk membukanya."
+        description="Bukan peserta percakapan ini. Ganti akun demo."
         action={
           <Button asChild variant="outline">
             <Link to={backHref}>Kembali ke inbox</Link>
@@ -274,7 +274,7 @@ function ThreadView({ thread: t, me, backHref }: { thread: Thread; me: User; bac
           <Avatar user={t.other} size={40} />
           <div className="min-w-0">
             <p className="truncate font-bold text-navy">{t.other?.displayName ?? 'Pengguna'}</p>
-            <p className="truncate text-xs text-slate-500">{t.role === 'provider' ? 'Penitip / pembeli' : 'Penyedia'} · {t.other?.city ?? '—'}</p>
+            <p className="truncate text-xs text-slate-500">{t.role === 'provider' ? 'Penitip / pembeli' : 'Penyedia'} · {t.other?.city ?? '-'}</p>
           </div>
         </Link>
         <Button variant="outline" size="sm" onClick={switchToOther} title="Mode demo: beralih ke akun lawan bicara untuk membalas">
@@ -284,7 +284,7 @@ function ThreadView({ thread: t, me, backHref }: { thread: Thread; me: User; bac
 
       {t.inquiry && <InquiryPanel inquiry={t.inquiry} listing={t.listing} me={me} other={t.other} />}
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#F4F7FA] px-3 py-4 sm:px-6" aria-live="polite" aria-label="Pesan">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-3 py-4 sm:px-6" aria-live="polite" aria-label="Pesan">
         {groups.map((g) => (
           <div key={g.day} className="space-y-2">
             <p className="my-3 text-center">
@@ -327,7 +327,7 @@ function ThreadView({ thread: t, me, backHref }: { thread: Thread; me: User; bac
         </Button>
       </form>
       <p className="flex items-center justify-center gap-1 bg-white px-3 pb-2 text-center text-[11px] text-slate-400">
-        <Info className="h-3 w-3" /> Pesan tersimpan lokal di browser ini — bukan chat real-time lintas perangkat.
+        <Info className="h-3 w-3" /> Pesan disimpan lokal di browser ini.
       </p>
     </>
   );
@@ -345,12 +345,12 @@ function Bubble({ m, mine, sender, otherId }: { m: Message; mine: boolean; sende
       <div
         className={cn(
           'max-w-[85%] rounded-2xl px-3.5 py-2 text-[15px] leading-snug shadow-sm sm:max-w-[70%]',
-          mine ? 'rounded-br-md bg-teal-500 text-white' : 'rounded-bl-md bg-white text-navy',
+          mine ? 'rounded-br-md bg-teal-700 text-white' : 'rounded-bl-md bg-white text-navy',
         )}
       >
         {!mine && <p className="mb-0.5 text-xs font-bold text-teal-700">{sender?.displayName ?? 'Pengguna'}</p>}
         <p className="whitespace-pre-line break-words">{m.body}</p>
-        <p className={cn('mt-1 flex items-center justify-end gap-1 text-[11px]', mine ? 'text-teal-50/90' : 'text-slate-400')}>
+        <p className={cn('mt-1 flex items-center justify-end gap-1 text-[11px]', mine ? 'text-white/80' : 'text-slate-400')}>
           {formatTime(m.createdAt)}
           {mine &&
             (readByOther ? (

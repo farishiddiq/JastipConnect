@@ -130,7 +130,7 @@ export function ListingWizard({ mode, initial, userId, listing, ctx, onBackToTyp
       mode === 'create' ? createListing(userId, payload, true) : updateListing(listing!.id, userId, payload, true);
     if (!res.ok) return toast.error(res.error);
     setDirty(false);
-    toast.success(mode === 'create' || listing?.status === 'draft' ? 'Listing diterbitkan! 🎉' : 'Perubahan disimpan');
+    toast.success(mode === 'create' || listing?.status === 'draft' ? 'Listing diterbitkan' : 'Perubahan disimpan');
     navigate(`/listings/${res.data.id}`);
   };
 
@@ -155,7 +155,7 @@ export function ListingWizard({ mode, initial, userId, listing, ctx, onBackToTyp
 
       <Card className="mt-5 p-5 sm:p-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-xl font-extrabold text-navy">{labels[step]}</h2>
+          <h2 className="text-xl font-bold text-navy">{labels[step]}</h2>
           <TypeBadge type={form.type} />
         </div>
 
@@ -261,7 +261,7 @@ function RouteStep({ form: f, set, errors }: StepProps) {
             <Select value={f.originCountry} onChange={(e) => set('originCountry', e.target.value)}>
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.flag} {c.name}
+                  {c.name}
                 </option>
               ))}
             </Select>
@@ -277,7 +277,7 @@ function RouteStep({ form: f, set, errors }: StepProps) {
             <Select value={f.destCountry} onChange={(e) => set('destCountry', e.target.value)}>
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.flag} {c.name}
+                  {c.name}
                 </option>
               ))}
             </Select>
@@ -329,15 +329,15 @@ function RouteStep({ form: f, set, errors }: StepProps) {
           checked={f.returnLegDropOff}
           onChange={(e) => set('returnLegDropOff', e.target.checked)}
           label="Titipan untuk perjalanan pulang (return leg)"
-          description="Centang jika barang boleh diserahkan setelah tanggal berangkat, selama sebelum tanggal kembali."
+          description="Barang boleh diserahkan setelah berangkat, sebelum tanggal kembali."
         />
       )}
 
       {f.type === 'shopping' && (
-        <Field id="f-currency" label="Mata uang listing" required hint="Mata uang default untuk produk baru. Kurs tidak dikonversi otomatis.">
+        <Field id="f-currency" label="Mata uang listing" required hint="Default untuk produk baru.">
           <Select value={f.currency} onChange={(e) => set('currency', e.target.value as Currency)} className="sm:w-60">
-            <option value="SAR">SAR — Riyal Saudi</option>
-            <option value="IDR">IDR — Rupiah</option>
+            <option value="SAR">SAR (Riyal Saudi)</option>
+            <option value="IDR">IDR (Rupiah)</option>
           </Select>
         </Field>
       )}
@@ -359,15 +359,14 @@ function CapacityStep({ form: f, set, errors, reservedKg }: StepProps & { reserv
         </Field>
         <Field id="f-currency" label="Mata uang" required>
           <Select value={f.currency} onChange={(e) => set('currency', e.target.value as Currency)}>
-            <option value="SAR">SAR — Riyal Saudi</option>
-            <option value="IDR">IDR — Rupiah</option>
+            <option value="SAR">SAR (Riyal Saudi)</option>
+            <option value="IDR">IDR (Rupiah)</option>
           </Select>
         </Field>
       </div>
       {cap > 0 && price > 0 && (
         <div className="rounded-2xl bg-teal-50 p-4 text-sm text-teal-900 ring-1 ring-teal-200">
-          Jika kuota terisi penuh, estimasi biaya jastip yang Anda terima: <b>{formatMoney(cap * price, f.currency)}</b>. Pembayaran diatur langsung
-          dengan penitip — tidak diproses oleh platform demo.
+          Jika penuh: <b>{formatMoney(cap * price, f.currency)}</b>. Dibayar langsung oleh penitip.
         </div>
       )}
     </div>
@@ -457,7 +456,7 @@ function ProductsStep({ form: f, set, errors, ctx }: StepProps & { ctx?: Validat
                 <Field id={`p-${i}-description`} label="Deskripsi singkat" hint="Opsional" className="sm:col-span-2">
                   <Textarea value={p.description} onChange={(ev) => update(i, { description: ev.target.value })} className="min-h-[64px]" maxLength={200} />
                 </Field>
-                <Field id={`p-${i}-imageUrl`} label="URL gambar" error={e('imageUrl')} hint="Opsional. Tanpa gambar, kami tampilkan ilustrasi kategori." className="sm:col-span-2">
+                <Field id={`p-${i}-imageUrl`} label="URL gambar" error={e('imageUrl')} hint="Opsional." className="sm:col-span-2">
                   <Input type="url" value={p.imageUrl} onChange={(ev) => update(i, { imageUrl: ev.target.value })} placeholder="https://…" />
                 </Field>
               </div>
@@ -497,7 +496,7 @@ function DetailsStep({ form: f, set, errors }: StepProps) {
       >
         <Input value={f.title} onChange={(e) => set('title', e.target.value)} maxLength={100} />
       </Field>
-      <Field id="f-description" label="Deskripsi" required error={errors.description} hint="Ceritakan perjalanan Anda, maskapai, dan hal yang perlu diketahui penitip.">
+      <Field id="f-description" label="Deskripsi" required error={errors.description} hint="Perjalanan, maskapai, dan info penting.">
         <Textarea value={f.description} onChange={(e) => set('description', e.target.value)} maxLength={1500} className="min-h-[120px]" />
       </Field>
       {f.type === 'weight' && (
@@ -505,7 +504,7 @@ function DetailsStep({ form: f, set, errors }: StepProps) {
           <Textarea value={f.permittedItemsNote} onChange={(e) => set('permittedItemsNote', e.target.value)} className="min-h-[72px]" maxLength={500} />
         </Field>
       )}
-      <Field id="f-prohibitedItemsNote" label="Barang yang tidak diterima" hint="Opsional, tapi sangat disarankan.">
+      <Field id="f-prohibitedItemsNote" label="Barang yang tidak diterima" hint="Opsional.">
         <Textarea
           value={f.prohibitedItemsNote}
           onChange={(e) => set('prohibitedItemsNote', e.target.value)}
@@ -530,10 +529,10 @@ function DetailsStep({ form: f, set, errors }: StepProps) {
           <Input value={f.handoverMethod.trimStart()} onChange={(e) => set('handoverMethod', e.target.value || ' ')} maxLength={120} />
         </Field>
       )}
-      <Field id="f-terms" label="Syarat & ketentuan" required error={errors.terms} hint="Jangan cantumkan nomor telepon atau alamat lengkap di sini.">
+      <Field id="f-terms" label="Syarat & ketentuan" required error={errors.terms} hint="Tanpa nomor telepon atau alamat.">
         <Textarea value={f.terms} onChange={(e) => set('terms', e.target.value)} maxLength={1500} />
       </Field>
-      <Field id="f-coverImageUrl" label="URL foto sampul" error={errors.coverImageUrl} hint="Opsional. Tanpa foto, kami buat ilustrasi rute otomatis.">
+      <Field id="f-coverImageUrl" label="URL foto sampul" error={errors.coverImageUrl} hint="Opsional.">
         <Input type="url" value={f.coverImageUrl} onChange={(e) => set('coverImageUrl', e.target.value)} placeholder="https://…" />
       </Field>
       <SafetyNotice variant="compact" />
@@ -552,19 +551,19 @@ function PreviewStep({ form: f, set, errors }: StepProps) {
         </div>
         <div className="space-y-3 p-4">
           <TypeBadge type={f.type} />
-          <h3 className="text-lg font-extrabold text-navy">{p.title}</h3>
+          <h3 className="text-lg font-bold text-navy">{p.title}</h3>
           <RouteDisplay listing={p} />
           <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-            <PreviewFact label="Berangkat" value={p.departureDate ? formatDate(p.departureDate) : '—'} />
-            <PreviewFact label="Kembali" value={p.returnDate ? formatDate(p.returnDate) : '—'} />
-            <PreviewFact label={f.type === 'weight' ? 'Batas titip' : 'Batas pesan'} value={p.orderDeadline ? formatDate(p.orderDeadline) : '—'} />
+            <PreviewFact label="Berangkat" value={p.departureDate ? formatDate(p.departureDate) : '-'} />
+            <PreviewFact label="Kembali" value={p.returnDate ? formatDate(p.returnDate) : '-'} />
+            <PreviewFact label={f.type === 'weight' ? 'Batas titip' : 'Batas pesan'} value={p.orderDeadline ? formatDate(p.orderDeadline) : '-'} />
             {p.type === 'weight' && (
               <>
                 <PreviewFact label="Kuota" value={formatKg(p.capacityKg)} />
                 <PreviewFact label="Biaya" value={`${formatMoney(p.pricePerKg, p.currency)}/kg`} />
               </>
             )}
-            <PreviewFact label="Serah terima" value={p.handoverMethod ?? '—'} />
+            <PreviewFact label="Serah terima" value={p.handoverMethod ?? '-'} />
           </dl>
           {p.type === 'shopping' && (
             <ul className="divide-y divide-border rounded-xl border border-border">

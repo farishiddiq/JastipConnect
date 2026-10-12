@@ -16,7 +16,7 @@ export function formatMoneyGroups(groups: Partial<Record<Currency, number>>): st
   const parts = (Object.entries(groups) as [Currency, number][])
     .filter(([, v]) => v > 0)
     .map(([c, v]) => formatMoney(v, c));
-  return parts.length ? parts.join(' + ') : '—';
+  return parts.length ? parts.join(' + ') : '-';
 }
 
 export function formatDate(key: string, opts?: Intl.DateTimeFormatOptions): string {
@@ -69,4 +69,16 @@ export function formatKg(kg: number): string {
 
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat(LOCALE).format(n);
+}
+
+/** Card title without the route: the destination is already shown right below the title. */
+export function listingTitle(l: { title: string; origin: { city: string }; destination: { city: string } }): string {
+  const route = `${l.origin.city} → ${l.destination.city}`;
+  const i = l.title.toLowerCase().indexOf(route.toLowerCase());
+  if (i < 0) return l.title;
+  let after = l.title.slice(i + route.length).trimStart();
+  if (after.startsWith(',')) after = after.slice(1).trimStart();
+  const t = `${l.title.slice(0, i).trimEnd()} ${after}`.trim();
+  if (!t) return l.title;
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }

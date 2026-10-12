@@ -145,8 +145,11 @@ export type AppNotification = {
 
 export type Session = { currentUserId: string | null };
 
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 export type Settings = {
   seededAt: string | null;
+  theme?: ThemePreference;
   demoBannerDismissed: boolean;
   /** userId -> saved listing ids */
   saved: Record<string, string[]>;

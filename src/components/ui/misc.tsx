@@ -2,18 +2,18 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('rounded-2xl border border-border bg-white shadow-card', className)} {...props} />;
+  return <div className={cn('rounded-3xl bg-white shadow-card', className)} {...props} />;
 }
 
 const badgeTones = {
-  neutral: 'bg-slate-100 text-slate-700',
-  teal: 'bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200',
-  navy: 'bg-navy-50 text-navy ring-1 ring-inset ring-navy-100',
-  amber: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200',
-  red: 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200',
-  green: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200',
-  blue: 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200',
-  muted: 'bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-200',
+  neutral: 'bg-slate-100 text-navy',
+  muted: 'bg-slate-100 text-slate-600',
+  navy: 'bg-slate-100 text-navy',
+  blue: 'bg-slate-100 text-navy',
+  teal: 'bg-slate-100 text-navy before:h-1.5 before:w-1.5 before:rounded-full before:content-[""] before:bg-teal-500',
+  amber: 'bg-slate-100 text-navy before:h-1.5 before:w-1.5 before:rounded-full before:content-[""] before:bg-amber-500',
+  red: 'bg-slate-100 text-navy before:h-1.5 before:w-1.5 before:rounded-full before:content-[""] before:bg-red-500',
+  green: 'bg-slate-100 text-navy',
 } as const;
 
 export type BadgeTone = keyof typeof badgeTones;
@@ -96,7 +96,7 @@ export function Tabs<T extends string>({
               <span
                 className={cn(
                   'min-w-[20px] rounded-full px-1.5 text-[11px] leading-5',
-                  active ? 'bg-teal-500 text-white' : 'bg-slate-200 text-slate-600',
+                  active ? 'bg-teal-700 text-white' : 'bg-slate-200 text-slate-600',
                 )}
               >
                 {it.count}

@@ -1,0 +1,25 @@
+# Photo credits
+
+All photos from Unsplash (Unsplash License), self-hosted.
+
+- hero.webp: photo by Eva Darron on Unsplash (https://unsplash.com/photos/airplanes-window-view-of-sky-during-golden-hour-oCdVtGFeDC0)
+- riyadh.webp: photo by سيف الظاهر on Unsplash (https://unsplash.com/photos/a-city-at-night-vAkHAP27QMk)
+- jeddah.webp: photo by Suhrid on Unsplash (https://unsplash.com/photos/a-beach-next-to-a-city-with-tall-buildings-Zfk19D5hmGc)
+- madinah.webp: photo by djonk creative on Unsplash (https://unsplash.com/photos/al-masjid-an-nabawi-minarets-and-dome-AdZ68iA9X08)
+- makkah.webp: photo by Sam Riz on Unsplash (https://unsplash.com/photos/kaaba-at-masjid-al-haram-in-mecca-ceNCWYqL8DY)
+- jakarta.webp: photo by Afif Ramdhasuma on Unsplash (https://unsplash.com/photos/an-aerial-view-of-a-city-at-night-KvMw3jKXNZE)
+- surabaya.webp: photo by Kristian Tandjung on Unsplash (https://unsplash.com/photos/a-man-riding-a-motorcycle-down-a-street-next-to-tall-buildings-8wubO8zG8vg)
+- bandung.webp: photo by Hani Fildzah on Unsplash (https://unsplash.com/photos/cars-on-road-near-bridge-during-daytime-30h0YG29W30)
+- makassar.webp: photo by Khairul Akbar on Unsplash (https://unsplash.com/photos/an-aerial-view-of-a-building-with-a-large-orange-dome-COSqXHT2364)
+- kurma.webp: photo by VD Photography on Unsplash (https://unsplash.com/photos/brown-round-fruit-on-white-ceramic-bowl-5t6D43cwOcY)
+- cokelat.webp: photo by Jessica Loaiza on Unsplash (https://unsplash.com/photos/brown-and-white-chocolate-bars-DHYfjAe_eeo)
+- fashion.webp: photo by Ekaterina Grosheva on Unsplash (https://unsplash.com/photos/blue-green-and-brown-textile-wgRD0Lfe43Q)
+- kosmetik.webp: photo by pmv chamara on Unsplash (https://unsplash.com/photos/pink-cosmetic-containers-and-makeup-brush-dMjkQJs58uo)
+- wewangian.webp: photo by Sayak Bala on Unsplash (https://unsplash.com/photos/brown-ceramic-cup-with-smoke-jowBlJC165U)
+- ibadah.webp: photo by Torben Gettermann on Unsplash (https://unsplash.com/photos/a-hand-holds-a-rosary-against-a-black-background-nT9cuTEII38)
+- bumbu.webp: photo by Albert Vincent Wu on Unsplash (https://unsplash.com/photos/red-and-white-handled-scissors-beside-white-ceramic-bowl-with-red-and-green-fruits-LrcwowQgwH0)
+- camilan.webp: photo by Mike Kenneally on Unsplash (https://unsplash.com/photos/coffee-bean-lot-TD4DBagg2wE)
+- suvenir.webp: photo by Wijdan Mq on Unsplash (https://unsplash.com/photos/two-pink-and-white-floral-boxes-H5yiRXDUkto)
+- luggage.webp: photo by Anete Lūsiņa on Unsplash (https://unsplash.com/photos/black-dslr-camera-near-sunglasses-and-bag-GOZxrAlNIt4)
+- shopping.webp: photo by Kate Trysh on Unsplash (https://unsplash.com/photos/a-narrow-city-street-with-a-lot-of-signs-on-the-buildings-HrGzydopPQg)
+- lainnya.webp: photo by Mahmur Marganti on Unsplash (https://unsplash.com/photos/person-holding-brown-metal-tool-8Bg8N8HtiWI)

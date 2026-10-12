@@ -14,18 +14,17 @@ export function SafetyNotice({ variant = 'full', className }: { variant?: 'full'
           <p className="font-bold">Cek aturan sebelum titip</p>
           {variant === 'full' ? (
             <ul className="list-disc space-y-1 pl-4 text-[13px] leading-relaxed text-amber-900/90">
-              <li>Aturan maskapai, bea cukai, impor/ekspor, barang terbatas, dan kewajiban deklarasi dapat berlaku.</li>
-              <li>Penyedia dan pembeli wajib memeriksa sendiri aturan dan ketentuan hukum yang berlaku.</li>
-              <li>Dilarang menitipkan barang berbahaya, ilegal, atau terbatas. Contoh di halaman keamanan hanya panduan, bukan nasihat hukum.</li>
-              <li>Demo ini tidak memverifikasi barang, identitas, pembayaran, maupun keamanan pengiriman.</li>
+              <li>Aturan maskapai, bea cukai, dan deklarasi berlaku. Periksa sendiri.</li>
+              <li>Dilarang menitipkan barang berbahaya, ilegal, atau terbatas.</li>
+              <li>Demo tidak memverifikasi barang, identitas, atau pembayaran.</li>
             </ul>
           ) : (
             <p className="text-[13px] leading-relaxed text-amber-900/90">
-              Aturan maskapai & bea cukai berlaku. Platform demo tidak memverifikasi barang, identitas, atau pembayaran.
+              Aturan maskapai & bea cukai berlaku. Demo tidak memverifikasi apa pun.
             </p>
           )}
           <Link to="/safety" className="inline-block text-[13px] font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-950">
-            Lihat daftar barang terlarang & panduan keamanan
+            Daftar barang terlarang
           </Link>
         </div>
       </div>

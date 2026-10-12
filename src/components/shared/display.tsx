@@ -2,15 +2,14 @@ import * as React from 'react';
 import { ArrowRight, BadgeCheck, CircleDashed, Plane, ShoppingBag, Star } from 'lucide-react';
 import type { InquiryStatus, Listing, ListingStatus, ListingType, User } from '@/types';
 import { cn, initials, pickBySeed } from '@/lib/utils';
-import { emojiForCategory, flagFor } from '@/data/locations';
+import { categoryImage, coverImageFor } from '@/data/images';
 import { Badge, type BadgeTone } from '@/components/ui/misc';
 
 const AVATAR_COLORS = [
   'bg-teal-100 text-teal-800',
   'bg-amber-100 text-amber-800',
   'bg-sky-100 text-sky-800',
-  'bg-rose-100 text-rose-800',
-  'bg-violet-100 text-violet-800',
+  'bg-navy-100 text-navy-600',
   'bg-emerald-100 text-emerald-800',
 ];
 
@@ -25,7 +24,7 @@ export function Avatar({ user, size = 40, className }: { user?: Pick<User, 'id' 
         alt=""
         style={style}
         onError={() => setBroken(true)}
-        className={cn('shrink-0 rounded-full object-cover ring-2 ring-white', className)}
+        className={cn('shrink-0 rounded-[32%] object-cover ring-2 ring-white', className)}
       />
     );
   }
@@ -34,7 +33,7 @@ export function Avatar({ user, size = 40, className }: { user?: Pick<User, 'id' 
       aria-hidden
       style={style}
       className={cn(
-        'inline-flex shrink-0 select-none items-center justify-center rounded-full font-bold ring-2 ring-white',
+        'inline-flex shrink-0 select-none items-center justify-center rounded-[32%] font-bold tracking-tight ring-2 ring-white',
         pickBySeed(user?.id ?? name, AVATAR_COLORS),
         className,
       )}
@@ -104,16 +103,14 @@ export function RouteDisplay({
   return (
     <div
       className={cn('flex min-w-0 items-center gap-2 font-bold text-navy', text, className)}
-      aria-label={`Rute dari ${origin.city || '—'}, ${origin.country} ke ${destination.city || '—'}, ${destination.country}`}
+      aria-label={`Rute dari ${origin.city || 'kota belum diisi'}, ${origin.country} ke ${destination.city || 'kota belum diisi'}, ${destination.country}`}
     >
       <span className="flex min-w-0 items-center gap-1.5">
-        <span aria-hidden>{flagFor(origin.countryCode)}</span>
-        <span className="truncate">{origin.city || '—'}</span>
+        <span className="truncate">{origin.city || '-'}</span>
       </span>
       <ArrowRight className={cn('shrink-0 text-teal-500', size === 'lg' ? 'h-6 w-6' : 'h-4 w-4')} aria-hidden />
       <span className="flex min-w-0 items-center gap-1.5">
-        <span aria-hidden>{flagFor(destination.countryCode)}</span>
-        <span className="truncate">{destination.city || '—'}</span>
+        <span className="truncate">{destination.city || '-'}</span>
       </span>
     </div>
   );
@@ -167,56 +164,45 @@ export function VerificationLabel({ user }: { user?: User }) {
   );
 }
 
-const COVER_GRADIENTS = [
-  'from-navy via-navy-500 to-teal-500',
-  'from-teal-600 via-teal-500 to-sky-400',
-  'from-navy-600 via-navy-400 to-amber-400',
-  'from-navy-800 via-teal-700 to-teal-400',
-];
-
-/** Listing cover image with a designed illustration fallback (no external dependency). */
+/** Listing cover: real photo by city/category, with a designed gradient fallback if it fails to load. */
 export function ListingCover({ listing, className, compact }: { listing: Listing; className?: string; compact?: boolean }) {
+  const src = coverImageFor(listing);
   const [broken, setBroken] = React.useState(false);
-  const url = listing.imageUrls[0];
-  if (url && !broken) {
-    return <img src={url} alt="" loading="lazy" onError={() => setBroken(true)} className={cn('h-full w-full object-cover', className)} />;
+  React.useEffect(() => setBroken(false), [src]);
+  if (!broken) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setBroken(true)}
+        className={cn('h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]', className)}
+      />
+    );
   }
-  const emojis =
-    listing.type === 'shopping' ? Array.from(new Set(listing.products.map((p) => emojiForCategory(p.category)))).slice(0, 3) : [];
   return (
-    <div
-      aria-hidden
-      className={cn('relative flex h-full w-full overflow-hidden bg-gradient-to-br text-white', pickBySeed(listing.id, COVER_GRADIENTS), className)}
-    >
-      <svg className="absolute inset-0 h-full w-full opacity-[0.18]" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
-        <path d="M-20 170 Q 120 40 220 110 T 430 60" stroke="white" strokeWidth="2" strokeDasharray="6 8" fill="none" />
-        <circle cx="330" cy="40" r="60" fill="white" opacity="0.25" />
-        <circle cx="40" cy="200" r="80" fill="white" opacity="0.12" />
-      </svg>
-      <div className={cn('relative flex w-full flex-col justify-between', compact ? 'p-3' : 'p-4')}>
-        <div className="flex items-center gap-2 text-white/90">
-          {listing.type === 'weight' ? <Plane className="h-5 w-5" /> : <ShoppingBag className="h-5 w-5" />}
-          <span className="text-xs font-semibold uppercase tracking-wider">{TYPE_LABEL[listing.type]}</span>
-        </div>
-        {listing.type === 'shopping' && emojis.length > 0 && !compact && (
-          <div className="flex gap-2 self-end text-4xl drop-shadow">{emojis.map((e) => <span key={e}>{e}</span>)}</div>
-        )}
-        <div className={cn('font-extrabold leading-tight drop-shadow-sm', compact ? 'text-sm' : 'text-lg')}>
-          {listing.origin.city || '—'} <span className="text-teal-200">→</span> {listing.destination.city || '—'}
-        </div>
+    <div aria-hidden className={cn('relative flex h-full w-full bg-gradient-to-br from-navy-600 to-teal-700 text-snow', className)}>
+      <div className={cn('flex w-full flex-col justify-between', compact ? 'p-3' : 'p-4')}>
+        {listing.type === 'weight' ? <Plane className="h-5 w-5 opacity-80" /> : <ShoppingBag className="h-5 w-5 opacity-80" />}
+        <span className={cn('font-bold leading-tight', compact ? 'text-sm' : 'text-lg')}>
+          {listing.origin.city || '-'} → {listing.destination.city || '-'}
+        </span>
       </div>
     </div>
   );
 }
 
 export function ProductThumb({ imageUrl, category, className }: { imageUrl?: string; category: string; className?: string }) {
-  const [broken, setBroken] = React.useState(false);
-  if (imageUrl && !broken) {
-    return <img src={imageUrl} alt="" loading="lazy" onError={() => setBroken(true)} className={cn('object-cover', className)} />;
+  const candidates = [imageUrl, categoryImage(category)].filter(Boolean) as string[];
+  const [index, setIndex] = React.useState(0);
+  const src = candidates[index];
+  if (src) {
+    return <img src={src} alt="" loading="lazy" decoding="async" onError={() => setIndex((i) => i + 1)} className={cn('object-cover', className)} />;
   }
   return (
-    <div aria-hidden className={cn('flex items-center justify-center bg-gradient-to-br from-teal-50 to-amber-50 text-3xl', className)}>
-      {emojiForCategory(category)}
+    <div aria-hidden className={cn('flex items-center justify-center bg-teal-50 text-teal-600', className)}>
+      <ShoppingBag className="h-1/3 w-1/3" />
     </div>
   );
 }
@@ -248,7 +234,7 @@ export function PageHeader({ title, description, actions, className }: { title: 
   return (
     <div className={cn('mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between', className)}>
       <div className="min-w-0">
-        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{title}</h1>
+        <h1 className="text-[1.75rem] font-bold leading-[1.1] text-navy sm:text-4xl">{title}</h1>
         {description && <p className="mt-1 text-sm text-slate-500 sm:text-[15px]">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}

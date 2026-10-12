@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, CalendarDays, Clock, Eye, Package } from 'lucide-react';
+import { Bookmark, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ListingView } from '@/hooks/useStore';
 import { useSavedIds } from '@/hooks/useStore';
-import { Avatar, ListingCover, ListingStatusBadge, RouteDisplay, TypeBadge } from '@/components/shared/display';
+import { ListingCover, ListingStatusBadge } from '@/components/shared/display';
 import { useAuth } from '@/components/shared/AccountSwitcher';
 import { toggleSaved } from '@/services/userService';
-import { formatCountdown, formatDateShort, formatKg, formatMoney } from '@/lib/format';
+import { formatDateShort, formatKg, formatMoney, listingTitle } from '@/lib/format';
 import { referencePrice } from '@/lib/availability';
 import { cn } from '@/lib/utils';
 
@@ -47,19 +47,13 @@ export function AvailabilityMeter({ view, className }: { view: ListingView; clas
     a.type === 'weight'
       ? `Sisa ${formatKg(a.remaining)} dari ${formatKg(a.total)}`
       : a.remaining > 0
-        ? `${a.productsLeft} produk tersedia · stok ${a.remaining}`
+        ? `${a.productsLeft} produk tersedia`
         : 'Semua produk habis';
   return (
     <div className={className}>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="font-semibold text-navy">{label}</span>
-        <span className="text-slate-400">{pct}% terisi</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Kapasitas terisi">
-        <div
-          className={cn('h-full rounded-full transition-all', pct >= 100 ? 'bg-amber-400' : pct >= 70 ? 'bg-teal-400' : 'bg-teal-500')}
-          style={{ width: `${pct}%` }}
-        />
+      <p className="num mb-1.5 text-[13px] font-semibold text-navy">{label}</p>
+      <div className="h-1 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Kapasitas terisi">
+        <div className={cn('h-full rounded-full transition-[width] duration-500 ease-spring', pct >= 100 ? 'bg-amber-400' : 'bg-teal-500')} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -70,7 +64,7 @@ export function PriceLabel({ view, className }: { view: ListingView; className?:
   if (l.type === 'weight') {
     return (
       <p className={cn('text-navy', className)}>
-        <span className="text-lg font-extrabold">{formatMoney(l.pricePerKg, l.currency)}</span>
+        <span className="num text-lg font-semibold">{formatMoney(l.pricePerKg, l.currency)}</span>
         <span className="text-sm text-slate-500">/kg</span>
       </p>
     );
@@ -79,86 +73,61 @@ export function PriceLabel({ view, className }: { view: ListingView; className?:
   return (
     <p className={cn('text-navy', className)}>
       <span className="text-sm text-slate-500">mulai </span>
-      <span className="text-lg font-extrabold">{formatMoney(ref.amount, ref.currency)}</span>
+      <span className="num text-lg font-semibold">{formatMoney(ref.amount, ref.currency)}</span>
     </p>
   );
 }
 
-export function ListingCard({ view, showViews }: { view: ListingView; showViews?: boolean }) {
-  const { listing: l, status, owner } = view;
+export function ListingCard({ view, showViews, compact }: { view: ListingView; showViews?: boolean; compact?: boolean }) {
+  const { listing: l, status } = view;
   const muted = status !== 'open';
   return (
     <article
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-card transition-all hover:-translate-y-0.5 hover:shadow-lift focus-within:ring-2 focus-within:ring-teal-500',
-        muted && 'opacity-75 saturate-[0.6] hover:opacity-100 hover:saturate-100',
+        'group relative flex h-full flex-col bg-white shadow-card transition duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-lift has-[a:active]:scale-[0.985] focus-within:ring-2 focus-within:ring-teal-500',
+        compact ? 'rounded-2xl p-2' : 'rounded-3xl p-3',
+        muted && 'opacity-70 saturate-50 hover:opacity-100 hover:saturate-100',
       )}
     >
-      <div className="relative aspect-[16/9] overflow-hidden">
+      <div className={cn('relative overflow-hidden', compact ? 'aspect-[4/3] rounded-xl' : 'aspect-square rounded-2xl')}>
         <ListingCover listing={l} />
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-          <TypeBadge type={l.type} className="bg-white/95 shadow-sm" />
-        </div>
-        <SaveButton listingId={l.id} className="absolute right-3 top-3 z-10" />
+        <span className={cn('num absolute inline-flex items-center rounded-full bg-white font-medium text-teal-700 shadow-sm', compact ? 'left-2 top-2 gap-1 px-2 py-1 text-xs' : 'left-3 top-3 gap-1.5 px-3 py-1.5 text-[13px]')}>
+          <Clock className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
+          {formatDateShort(l.departureDate)}
+        </span>
+        <SaveButton listingId={l.id} className={cn('absolute z-10 !bg-white', compact ? 'right-2 top-2 !h-8 !w-8' : 'right-3 top-3 !h-9 !w-9')} />
         {muted && (
-          <div className="absolute bottom-3 left-3">
+          <div className={compact ? 'absolute bottom-2 left-2' : 'absolute bottom-3 left-3'}>
             <ListingStatusBadge status={status} type={l.type} />
           </div>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="space-y-1">
-          <RouteDisplay listing={l} size="sm" className="text-slate-500" />
-          <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-navy">
-            <Link to={`/listings/${l.id}`} className="after:absolute after:inset-0 focus-visible:outline-none">
-              {l.title}
-            </Link>
-          </h3>
-        </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-500">
-          <span className="flex items-center gap-1.5">
-            <CalendarDays className="h-4 w-4 text-slate-400" aria-hidden />
-            Berangkat {formatDateShort(l.departureDate)}
-          </span>
-          <span className={cn('flex items-center gap-1.5', status === 'open' && 'text-amber-700')}>
-            <Clock className="h-4 w-4 opacity-70" aria-hidden />
-            {status === 'open' ? `Tutup ${formatCountdown(l.orderDeadline)}` : `Batas ${formatDateShort(l.orderDeadline)}`}
-          </span>
-          {l.type === 'shopping' && (
-            <span className="flex items-center gap-1.5">
-              <Package className="h-4 w-4 text-slate-400" aria-hidden />
-              {l.products.length} produk
-            </span>
-          )}
-        </div>
-        <AvailabilityMeter view={view} />
-        <div className="mt-auto flex items-end justify-between gap-2 border-t border-border pt-3">
-          <PriceLabel view={view} />
-          <div className="flex min-w-0 items-center gap-2 text-[13px] text-slate-500">
-            {showViews ? (
-              <span className="flex items-center gap-1">
-                <Eye className="h-4 w-4" /> {l.viewCount}
-              </span>
-            ) : (
-              <>
-                <Avatar user={owner} size={24} />
-                <span className="truncate">{owner?.displayName.split(' ')[0] ?? 'Pengguna'}</span>
-              </>
-            )}
-          </div>
+      <div className={compact ? 'px-1 pb-0.5 pt-2.5' : 'px-1 pb-1 pt-3.5'}>
+        <h3 className={cn('line-clamp-1 font-semibold text-navy', compact ? 'text-sm' : 'text-base')}>
+          <Link to={`/listings/${l.id}`} className="after:absolute after:inset-0 focus-visible:outline-none">
+            {listingTitle(l)}
+          </Link>
+        </h3>
+        <p className={cn('mt-0.5 truncate text-slate-500', compact ? 'text-xs' : 'text-[13px]')}>
+          {l.origin.city} → {l.destination.city}
+          {showViews && ` · ${l.viewCount} dilihat`}
+        </p>
+        <div className={cn('flex items-baseline justify-between gap-2', compact ? 'mt-2' : 'mt-3')}>
+          <span className={cn('text-navy', compact ? 'text-xs' : 'text-sm')}>Harga</span>
+          <PriceLabel view={view} className={cn('!text-teal-700 [&_.num]:font-bold', compact ? 'text-xs [&_.num]:text-sm [&_span]:text-xs' : '[&_.num]:text-base')} />
         </div>
       </div>
     </article>
   );
 }
 
-export function ListingGrid({ views, className }: { views: ListingView[]; className?: string }) {
+export function ListingGrid({ views, className, compact, mobileLimit }: { views: ListingView[]; className?: string; compact?: boolean; mobileLimit?: number }) {
   return (
-    <ul className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', className)}>
-      {views.map((v) => (
-        <li key={v.listing.id} className="flex">
+    <ul className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', compact && '!grid-cols-2 !gap-3 md:!grid-cols-3 lg:!grid-cols-4', className)}>
+      {views.map((v, i) => (
+        <li key={v.listing.id} className={cn('flex', mobileLimit !== undefined && i >= mobileLimit && 'max-sm:hidden')}>
           <div className="w-full">
-            <ListingCard view={v} />
+            <ListingCard view={v} compact={compact} />
           </div>
         </li>
       ))}

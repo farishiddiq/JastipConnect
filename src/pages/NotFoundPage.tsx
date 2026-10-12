@@ -11,7 +11,7 @@ export function NotFoundPage() {
       <EmptyState
         icon={<MapPinOff />}
         title="Halaman tidak ditemukan"
-        description="Tautan mungkin salah atau listing sudah dihapus. Coba jelajahi listing lain."
+        description="Tautan salah atau listing dihapus."
         action={
           <>
             <Button asChild>
@@ -40,8 +40,8 @@ export function RouteError() {
           title="Terjadi kesalahan"
           description={
             <>
-              Maaf, halaman ini gagal dimuat. Jika data demo rusak, buka Profil → Reset Data Demo.
-              {error?.message && <span className="mt-2 block font-mono text-xs text-slate-400">{error.message}</span>}
+              Halaman gagal dimuat. Jika data rusak, reset di Profil.
+              {error?.message && <span className="mt-2 block text-xs text-slate-400">{error.message}</span>}
             </>
           }
           action={

@@ -7,7 +7,7 @@ import { useAuth } from '@/components/shared/AccountSwitcher';
 import { useCurrentUser } from '@/hooks/useStore';
 import type { User } from '@/types';
 
-/** Application-level gate for member routes (demo only — not a security boundary). */
+/** Application-level gate for member routes (demo only, not a security boundary). */
 export function RequireUser({ children, reason }: { children: (user: User) => React.ReactNode; reason: string }) {
   const user = useCurrentUser();
   const { openSwitcher } = useAuth();
@@ -44,7 +44,7 @@ export function RequireAdmin({ children }: { children: (user: User) => React.Rea
         <EmptyState
           icon={<ShieldOff />}
           title="Khusus moderator demo"
-          description="Halaman ini hanya untuk akun Admin Demo. Ganti akun melalui pengalih akun demo."
+          description="Hanya untuk Admin Demo."
           action={
             <Button onClick={() => openSwitcher('Pilih “Admin Demo” untuk membuka panel moderasi.')}>
               <Users /> Ganti ke Admin Demo

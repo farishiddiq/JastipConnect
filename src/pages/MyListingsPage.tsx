@@ -20,7 +20,7 @@ const TAB_STATUS: Record<Tab, string[]> = { active: ['open'], full: ['full'], cl
 
 export function MyListingsPage() {
   usePageMeta('Listing Saya');
-  return <RequireUser reason="Pilih akun demo untuk melihat dan mengelola listing Anda.">{(user) => <MyListings user={user} />}</RequireUser>;
+  return <RequireUser reason="Pilih akun demo untuk melihat listing Anda.">{(user) => <MyListings user={user} />}</RequireUser>;
 }
 
 function MyListings({ user }: { user: User }) {
@@ -38,7 +38,7 @@ function MyListings({ user }: { user: User }) {
     <div className="container py-6 sm:py-10">
       <PageHeader
         title="Listing Saya"
-        description="Kelola perjalanan dan PO Anda, pantau kuota, dan proses inquiry."
+        description="Kelola perjalanan dan PO Anda."
         actions={
           <Button asChild variant="accent">
             <Link to="/post">
@@ -73,7 +73,7 @@ function MyListings({ user }: { user: User }) {
             <EmptyState
               icon={<LayoutList />}
               title={tab === 'draft' ? 'Belum ada draf' : tab === 'active' ? 'Belum ada listing aktif' : 'Tidak ada listing di sini'}
-              description={tab === 'active' ? 'Pasang perjalanan atau PO pertama Anda — hanya butuh beberapa menit.' : undefined}
+              description={tab === 'active' ? 'Pasang perjalanan atau PO pertama Anda.' : undefined}
               action={
                 <Button asChild variant="accent">
                   <Link to="/post">
@@ -133,7 +133,7 @@ function MyListingRow({ view, userId }: { view: ListingView; userId: string }) {
         <RouteDisplay listing={l} size="sm" className="text-slate-600" />
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
           <span className="flex items-center gap-1">
-            <CalendarDays className="h-3.5 w-3.5" /> {l.departureDate ? formatDate(l.departureDate) : '—'}
+            <CalendarDays className="h-3.5 w-3.5" /> {l.departureDate ? formatDate(l.departureDate) : '-'}
           </span>
           <span className="flex items-center gap-1">
             <Eye className="h-3.5 w-3.5" /> {l.viewCount} dilihat

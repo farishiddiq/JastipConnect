@@ -36,7 +36,7 @@ export function ShareButton({ path, title, text, label = 'Bagikan', ...props }: 
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Salin tautan</DialogTitle>
-            <DialogDescription>Browser tidak mengizinkan salin otomatis. Salin tautan di bawah secara manual.</DialogDescription>
+            <DialogDescription>Salin tautan secara manual.</DialogDescription>
           </DialogHeader>
           <DialogBody className="pb-6">
             <Input readOnly value={manualUrl ?? ''} onFocus={(e) => e.currentTarget.select()} autoFocus aria-label="Tautan listing" />

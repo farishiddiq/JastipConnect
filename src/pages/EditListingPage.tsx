@@ -45,7 +45,7 @@ export function EditListingPage() {
               <EmptyState
                 icon={<Lock />}
                 title="Bukan listing Anda"
-                description="Hanya pemilik yang dapat mengedit listing ini. Ganti ke akun demo pemilik untuk melanjutkan."
+                description="Ganti ke akun pemilik untuk mengedit."
                 action={<Button asChild variant="outline"><Link to={`/listings/${listing.id}`}>Lihat listing</Link></Button>}
               />
             </div>
@@ -55,7 +55,7 @@ export function EditListingPage() {
           <div className="container py-6 sm:py-10">
             <PageHeader
               title={listing.status === 'draft' ? 'Lanjutkan draf' : 'Edit listing'}
-              description={listing.status === 'draft' ? 'Lengkapi lalu terbitkan.' : 'Perubahan langsung tampil di pencarian & halaman detail.'}
+              description={listing.status === 'draft' ? 'Lengkapi lalu terbitkan.' : 'Perubahan langsung tampil.'}
               className="mx-auto max-w-3xl"
             />
             <ListingWizard mode="edit" initial={initial} userId={user.id} listing={listing} ctx={ctx} />

@@ -37,7 +37,7 @@ function AdminContent() {
 
   return (
     <div className="container py-6 sm:py-10">
-      <PageHeader title="Panel Moderasi" description="Demo: tinjau laporan dan tutup listing yang melanggar. Tidak ada tindakan hukum atau verifikasi nyata." />
+      <PageHeader title="Panel Moderasi" description="Tinjau laporan dan tutup listing yang melanggar." />
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {stats.map((s) => (
           <Card key={s.label} className={s.warn ? 'border-amber-300 bg-amber-50/60 p-4' : 'p-4'}>
@@ -60,7 +60,7 @@ function AdminContent() {
 
       <section className="mt-8" aria-labelledby="queue-title">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 id="queue-title" className="text-lg font-extrabold text-navy">
+          <h2 id="queue-title" className="text-lg font-bold text-navy">
             Antrean laporan
           </h2>
           <Tabs
@@ -119,7 +119,7 @@ function ReportRow({ report: r }: { report: Report }) {
   const restore = () => {
     if (!listingView) return;
     const a = adminRestoreListing(listingView.listing.id);
-    a.ok ? toast.success('Blokir moderator dicabut. Pemilik dapat membuka kembali listing.') : toast.error(a.error);
+    a.ok ? toast.success('Blokir dicabut.') : toast.error(a.error);
   };
 
   const mark = (s: ReportStatus, msg: string) => {

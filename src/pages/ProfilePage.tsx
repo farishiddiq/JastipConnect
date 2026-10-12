@@ -10,6 +10,7 @@ import { Avatar, PageHeader, VerificationLabel } from '@/components/shared/displ
 import { useAuth } from '@/components/shared/AccountSwitcher';
 import { useConfirm } from '@/components/shared/ConfirmProvider';
 import { RequireUser } from '@/components/layout/Guards';
+import { ThemeControl } from '@/components/shared/ThemeControl';
 import { useDB, usePageMeta } from '@/hooks/useStore';
 import { switchAccount, updateProfile, validateProfile } from '@/services/userService';
 import { store, storageAvailable } from '@/services/store';
@@ -20,7 +21,7 @@ export function ProfilePage() {
   usePageMeta('Profil & Pengaturan');
   return (
     <div className="container max-w-3xl py-6 sm:py-10">
-      <RequireUser reason="Pilih akun demo untuk mengelola profil. Anda tetap bisa mereset data demo di bawah.">{(user) => <ProfileContent user={user} />}</RequireUser>
+      <RequireUser reason="Pilih akun demo untuk mengelola profil.">{(user) => <ProfileContent user={user} />}</RequireUser>
       <DemoSettings />
     </div>
   );
@@ -51,7 +52,7 @@ function ProfileContent({ user }: { user: User }) {
 
   return (
     <>
-      <PageHeader title="Akun" description="Profil demo Anda dan pengaturan aplikasi." />
+      <PageHeader title="Akun" description="Profil dan pengaturan." />
       <Card className="mb-4 flex flex-wrap items-center gap-4 p-5">
         <Avatar user={{ ...user, avatarUrl: form.avatarUrl || undefined }} size={64} />
         <div className="min-w-0 flex-1">
@@ -75,14 +76,14 @@ function ProfileContent({ user }: { user: User }) {
       </nav>
 
       <Card className="p-5 sm:p-6">
-        <h2 className="mb-4 text-lg font-extrabold text-navy">Edit profil publik</h2>
+        <h2 className="mb-4 text-lg font-bold text-navy">Edit profil publik</h2>
         <form onSubmit={save} noValidate className="space-y-4">
           <Field id="pf-name" label="Nama tampilan" required error={errors.displayName}>
             <Input value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} maxLength={40} />
           </Field>
-          <Field id="pf-city" label="Kota saat ini" hint="Hanya kota — jangan cantumkan alamat lengkap.">
+          <Field id="pf-city" label="Kota saat ini" hint="Hanya kota.">
             <Select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
-              <option value="">—</option>
+              <option value="">Pilih kota</option>
               {!cityKnown && form.city && <option value={form.city}>{form.city}</option>}
               {COUNTRIES.map((c) => (
                 <optgroup key={c.code} label={c.name}>
@@ -98,7 +99,7 @@ function ProfileContent({ user }: { user: User }) {
           <Field id="pf-bio" label="Bio singkat" error={errors.bio} hint={`${form.bio.length}/300`}>
             <Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} maxLength={300} />
           </Field>
-          <Field id="pf-avatar" label="URL foto profil" error={errors.avatarUrl} hint="Opsional. Tanpa foto, kami tampilkan inisial.">
+          <Field id="pf-avatar" label="URL foto profil" error={errors.avatarUrl} hint="Opsional.">
             <Input type="url" value={form.avatarUrl} onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })} placeholder="https://…" />
           </Field>
           <div className="flex flex-wrap gap-2">
@@ -150,7 +151,7 @@ function DemoSettings() {
     const ok = await confirm({
       title: 'Reset semua data demo?',
       description:
-        'Semua listing, inquiry, pesan, ulasan, laporan, dan profil yang Anda buat di browser ini akan dihapus dan diganti dengan data contoh awal. Tindakan ini tidak dapat dibatalkan.',
+        'Semua data di browser ini diganti data contoh awal. Tidak dapat dibatalkan.',
       confirmLabel: 'Ya, reset data',
       destructive: true,
     });
@@ -160,14 +161,20 @@ function DemoSettings() {
   };
 
   return (
+    <>
     <Card className="mt-6 p-5 sm:p-6">
-      <h2 className="flex items-center gap-2 text-lg font-extrabold text-navy">
+      <h2 className="text-lg font-bold text-navy">Tampilan</h2>
+      <p className="mt-1 text-sm text-slate-500">Otomatis mengikuti perangkat.</p>
+      <ThemeControl className="mt-4" />
+    </Card>
+    <Card className="mt-6 p-5 sm:p-6">
+      <h2 className="flex items-center gap-2 text-lg font-bold text-navy">
         <Database className="h-5 w-5 text-teal-600" /> Data demo
       </h2>
       <p className="mt-1 text-sm text-slate-500">
         Semua data disimpan di <code className="rounded bg-slate-100 px-1 text-[13px]">localStorage</code> browser ini dengan namespace{' '}
         <code className="rounded bg-slate-100 px-1 text-[13px]">jc:v1:*</code>. Tidak ada server, tidak tersinkron ke perangkat lain.
-        {!storageAvailable && <b className="text-red-600"> localStorage tidak tersedia — data hanya di memori.</b>}
+        {!storageAvailable && <b className="text-red-600"> localStorage tidak tersedia, data hanya di memori.</b>}
       </p>
       <dl className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
         {counts.map(([label, n]) => (
@@ -180,11 +187,12 @@ function DemoSettings() {
       {db.settings.seededAt && <p className="mt-3 text-xs text-slate-400">Data contoh dibuat: {formatDateTime(db.settings.seededAt)}</p>}
       <div className="mt-5 rounded-2xl border border-red-200 bg-red-50/60 p-4">
         <p className="font-semibold text-red-800">Reset Data Demo</p>
-        <p className="mt-1 text-[13px] text-red-700/90">Mengembalikan semua data ke kondisi awal (seed). Berguna sebelum presentasi.</p>
+        <p className="mt-1 text-[13px] text-red-700/90">Kembalikan ke data awal.</p>
         <Button variant="destructive" className="mt-3" onClick={reset}>
           <RotateCcw /> Reset Data Demo
         </Button>
       </div>
     </Card>
+    </>
   );
 }

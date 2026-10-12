@@ -19,7 +19,7 @@ export function ProviderProfilePage() {
   const { users } = useDB();
   const [tab, setTab] = React.useState<'active' | 'history'>('active');
 
-  usePageMeta(user ? `${user.displayName} — penyedia jastip` : 'Profil tidak ditemukan', user?.bio);
+  usePageMeta(user ? `${user.displayName}, penyedia jastip` : 'Profil tidak ditemukan', user?.bio);
 
   if (!user) {
     return (
@@ -41,13 +41,13 @@ export function ProviderProfilePage() {
         <aside className="space-y-4">
           <Card className="p-6 text-center">
             <Avatar user={user} size={96} className="mx-auto" />
-            <h1 className="mt-4 text-xl font-extrabold text-navy">{user.displayName}</h1>
+            <h1 className="mt-4 text-xl font-bold text-navy">{user.displayName}</h1>
             <div className="mt-2 flex justify-center">
               <VerificationLabel user={user} />
             </div>
             <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-slate-500">
               <span className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" /> {user.city ?? '—'}
+                <MapPin className="h-4 w-4" /> {user.city ?? '-'}
               </span>
               <span className="flex items-center gap-1">
                 <CalendarDays className="h-4 w-4" /> Sejak {formatMonthYear(user.joinedAt)}
@@ -55,7 +55,7 @@ export function ProviderProfilePage() {
             </div>
             {user.bio && <p className="mt-4 text-sm leading-relaxed text-slate-600">{user.bio}</p>}
             <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-              <Stat value={rating.count ? rating.average.toFixed(1) : '—'} label="rating" />
+              <Stat value={rating.count ? rating.average.toFixed(1) : '-'} label="rating" />
               <Stat value={String(completed)} label="selesai" />
               <Stat value={String(active.length)} label="aktif" />
             </div>
@@ -72,14 +72,14 @@ export function ProviderProfilePage() {
             </div>
           </Card>
           <p className="px-2 text-xs leading-relaxed text-slate-400">
-            Nomor telepon dan alamat tidak pernah ditampilkan. {user.demoVerified ? '“Verifikasi demo” hanyalah label contoh — tidak ada pemeriksaan identitas sungguhan.' : ''}
+            Kontak dan alamat tidak ditampilkan. {user.demoVerified ? '“Verifikasi demo” hanya label contoh.' : ''}
           </p>
         </aside>
 
         <div className="min-w-0 space-y-8">
           <section aria-labelledby="listings-title">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 id="listings-title" className="text-lg font-extrabold text-navy">
+              <h2 id="listings-title" className="text-lg font-bold text-navy">
                 Listing
               </h2>
               <Tabs
@@ -101,7 +101,7 @@ export function ProviderProfilePage() {
           </section>
 
           <section aria-labelledby="reviews-title">
-            <h2 id="reviews-title" className="mb-4 text-lg font-extrabold text-navy">
+            <h2 id="reviews-title" className="mb-4 text-lg font-bold text-navy">
               Ulasan ({rating.count})
             </h2>
             {rating.count ? (
@@ -145,7 +145,7 @@ export function ProviderProfilePage() {
                 </ul>
               </div>
             ) : (
-              <EmptyState icon={<Star />} title="Belum ada ulasan" description="Ulasan muncul setelah transaksi demo diselesaikan oleh kedua pihak." className="py-8" />
+              <EmptyState icon={<Star />} title="Belum ada ulasan" description="Ulasan muncul setelah transaksi selesai." className="py-8" />
             )}
           </section>
         </div>

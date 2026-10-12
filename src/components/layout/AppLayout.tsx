@@ -34,6 +34,8 @@ import { dismissDemoBanner, markNotificationRead, markNotificationsRead, switchA
 import { formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Logo } from './Logo';
+import { THEME_OPTIONS, useThemePreference } from '@/components/shared/ThemeControl';
+import { setTheme } from '@/services/userService';
 
 export function AppLayout() {
   const location = useLocation();
@@ -75,13 +77,13 @@ function DemoBanner() {
   const [open, setOpen] = React.useState(true);
   if (settings.demoBannerDismissed || !open) return null;
   return (
-    <div className="bg-navy text-white">
-      <div className="container flex items-center gap-3 py-2 text-[13px]">
-        <FlaskConical className="h-4 w-4 shrink-0 text-teal-300" aria-hidden />
+    <div className="border-b border-border bg-slate-100 text-slate-600">
+      <div className="container flex items-center gap-3 py-1.5 text-[13px]">
+        <FlaskConical className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
         <p className="min-w-0 flex-1 leading-snug">
-          <span className="font-semibold">Mode demo.</span> Data hanya tersimpan di browser ini — tanpa login, pembayaran, verifikasi, atau
-          pesan lintas perangkat sungguhan.{' '}
-          <Link to="/safety#demo" className="font-semibold text-teal-300 underline underline-offset-2">
+          <span className="font-semibold text-navy">Mode demo.</span> <span className="max-sm:hidden">Data hanya di browser ini; tanpa login atau pembayaran sungguhan.</span>
+          <span className="sm:hidden">Data lokal.</span>{' '}
+          <Link to="/safety#demo" className="font-semibold text-teal-700 underline underline-offset-2">
             Pelajari
           </Link>
         </p>
@@ -91,7 +93,7 @@ function DemoBanner() {
             setOpen(false);
             dismissDemoBanner();
           }}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
           aria-label="Tutup banner demo"
         >
           <X className="h-4 w-4" />
@@ -115,7 +117,7 @@ function Header() {
   const isExplore = !!useMatch('/explore');
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/75">
+    <header className="glass sticky top-0 z-40 border-b border-border/70">
       <div className="container flex h-16 items-center gap-3 lg:gap-6">
         <Link to="/" className="flex shrink-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500" aria-label="JastipConnect beranda">
           <Logo />
@@ -129,14 +131,14 @@ function Header() {
               end={n.end}
               className={({ isActive }) =>
                 cn(
-                  'relative flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
-                  isActive ? 'bg-teal-50 text-teal-700' : 'text-slate-600 hover:bg-slate-100 hover:text-navy',
+                  'relative flex h-10 items-center gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
+                  isActive ? 'bg-slate-100 text-navy' : 'text-slate-500 hover:bg-slate-100 hover:text-navy',
                 )
               }
             >
               {n.label}
               {n.to === '/inbox' && unread > 0 && (
-                <span className="rounded-full bg-teal-500 px-1.5 text-[11px] leading-5 text-white" aria-label={`${unread} percakapan belum dibaca`}>
+                <span className="rounded-full bg-teal-700 px-1.5 text-[11px] leading-5 text-white num" aria-label={`${unread} percakapan belum dibaca`}>
                   {unread}
                 </span>
               )}
@@ -171,9 +173,9 @@ function Header() {
         )}
 
         <div className={cn('flex items-center gap-1.5', isExplore ? 'ml-auto' : 'ml-auto lg:ml-0')}>
-          <Button asChild variant="accent" size="sm" className="hidden h-10 md:inline-flex">
+          <Button asChild aria-label="Pasang Listing" variant="accent" size="sm" className="hidden h-10 md:inline-flex">
             <Link to="/post">
-              <PlusCircle /> Pasang Listing
+              <PlusCircle /> <span className="hidden lg:inline">Pasang Listing</span>
             </Link>
           </Button>
           <NotificationBell />
@@ -239,7 +241,7 @@ function NotificationBell() {
             ))
           )}
         </div>
-        <p className="border-t border-border px-4 py-2 text-[11px] text-slate-400">Notifikasi lokal (demo) — tanpa push/email/WhatsApp.</p>
+        <p className="border-t border-border px-4 py-2 text-[11px] text-slate-400">Notifikasi lokal (demo).</p>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -247,6 +249,9 @@ function NotificationBell() {
 
 function UserMenu() {
   const user = useCurrentUser();
+  const theme = useThemePreference();
+  const nextTheme = THEME_OPTIONS[(THEME_OPTIONS.findIndex((t) => t.value === theme) + 1) % THEME_OPTIONS.length]!;
+  const ThemeIcon = THEME_OPTIONS.find((t) => t.value === theme)!.icon;
   const { openSwitcher } = useAuth();
   const navigate = useNavigate();
 
@@ -254,7 +259,7 @@ function UserMenu() {
     return (
       <Button variant="outline" size="sm" className="h-10" onClick={() => openSwitcher()}>
         <Users /> <span>Masuk</span>
-        <span className="hidden text-slate-400 sm:inline">(Demo)</span>
+        <span className="hidden text-slate-400 lg:inline">(Demo)</span>
       </Button>
     );
   }
@@ -273,7 +278,7 @@ function UserMenu() {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel className="normal-case tracking-normal">
           <span className="block text-sm font-bold text-navy">{user.displayName}</span>
-          <span className="block text-xs font-medium text-slate-400">Akun demo · {user.city ?? '—'}</span>
+          <span className="block text-xs font-medium text-slate-400">Akun demo · {user.city ?? '-'}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => navigate('/profile')}>
@@ -293,6 +298,14 @@ function UserMenu() {
             <ShieldCheck /> Panel Moderasi
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            setTheme(nextTheme.value);
+          }}
+        >
+          <ThemeIcon /> Tampilan: {THEME_OPTIONS.find((t) => t.value === theme)!.label}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => openSwitcher()}>
           <Users /> Ganti akun demo
@@ -323,7 +336,7 @@ function BottomNav() {
   return (
     <nav
       aria-label="Navigasi bawah"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+      className="glass fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <ul className="grid h-16 grid-cols-5">
         {items.map((it) => (
@@ -341,14 +354,14 @@ function BottomNav() {
               {({ isActive }) => (
                 <>
                   {it.primary ? (
-                    <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-lift ring-4 ring-white">
+                    <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500 text-deep shadow-lift ring-4 ring-white">
                       <it.icon className="h-6 w-6" aria-hidden />
                     </span>
                   ) : (
                     <span className="relative">
                       <it.icon className={cn('h-6 w-6', isActive && 'stroke-[2.4]')} aria-hidden />
                       {!!it.badge && (
-                        <span className="absolute -right-2 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-teal-500 px-1 text-[10px] text-white">
+                        <span className="absolute -right-2 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-teal-700 px-1 text-[10px] font-bold text-white num">
                           {it.badge}
                         </span>
                       )}
@@ -367,37 +380,22 @@ function BottomNav() {
 
 function Footer() {
   return (
-    <footer className="mt-16 border-t border-border bg-white pb-28 md:pb-0">
-      <div className="container grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="sm:col-span-2">
-          <Logo />
-          <p className="mt-3 max-w-sm text-sm text-slate-500">
-            Titip barang, temukan perjalanan, terhubung dengan diaspora. Koridor awal: Arab Saudi ↔ Indonesia.
-          </p>
-          <p className="mt-3 text-xs text-slate-400">
-            Prototipe demo. Tidak memproses pembayaran, tidak memverifikasi identitas, dan bukan nasihat hukum.
-          </p>
-        </div>
-        <div>
-          <h2 className="mb-3 text-sm font-bold text-navy">Jelajahi</h2>
-          <ul className="space-y-2 text-sm text-slate-600">
-            <li><Link className="hover:text-teal-700" to="/explore?type=weight">Jastip Diaspora</Link></li>
-            <li><Link className="hover:text-teal-700" to="/explore?type=shopping">Jastip Shopping</Link></li>
-            <li><Link className="hover:text-teal-700" to="/explore?oc=SA&dc=ID">Saudi → Indonesia</Link></li>
-            <li><Link className="hover:text-teal-700" to="/explore?oc=ID&dc=SA">Indonesia → Saudi</Link></li>
-          </ul>
-        </div>
-        <div>
-          <h2 className="mb-3 text-sm font-bold text-navy">Bantuan</h2>
-          <ul className="space-y-2 text-sm text-slate-600">
-            <li><Link className="hover:text-teal-700" to="/safety">Keamanan & barang terlarang</Link></li>
-            <li><Link className="hover:text-teal-700" to="/safety#demo">Batasan demo</Link></li>
-            <li><Link className="hover:text-teal-700" to="/post">Pasang listing</Link></li>
-            <li><Link className="hover:text-teal-700" to="/profile">Pengaturan & reset demo</Link></li>
-          </ul>
-        </div>
+    <footer className="mt-20 border-t border-border pb-28 md:pb-0">
+      <div className="container flex flex-col gap-6 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <Logo />
+        <nav aria-label="Tautan footer" className="hidden flex-wrap md:flex gap-x-6 gap-y-2 text-sm text-slate-600">
+          <Link className="hover:text-teal-700" to="/explore">Jelajahi</Link>
+          <Link className="hover:text-teal-700" to="/post">Pasang listing</Link>
+          <Link className="hover:text-teal-700" to="/safety">Keamanan</Link>
+          <Link className="hover:text-teal-700" to="/profile">Pengaturan</Link>
+        </nav>
       </div>
-      <div className="border-t border-border py-4 text-center text-xs text-slate-400">© {new Date().getFullYear()} JastipConnect · Demo</div>
+      <div className="container flex flex-col gap-1 border-t border-border py-4 text-xs text-slate-500 sm:flex-row sm:justify-between">
+        <span>© {new Date().getFullYear()} JastipConnect · Prototipe demo, bukan nasihat hukum</span>
+        <a className="hover:text-teal-700" href="https://unsplash.com/license" target="_blank" rel="noreferrer">
+          Foto: Unsplash
+        </a>
+      </div>
     </footer>
   );
 }

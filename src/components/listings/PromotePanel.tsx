@@ -17,7 +17,7 @@ export function PromotePanel({ compact, className }: { compact?: boolean; classN
             <h2 className="font-bold text-navy">Promosikan Listing</h2>
             <ComingSoonBadge />
           </div>
-          <p className="mt-1 text-[13px] text-slate-600">Jangkau lebih banyak penitip dengan fitur promosi berikut.</p>
+          <p className="mt-1 text-[13px] text-slate-600">Jangkau lebih banyak penitip.</p>
         </div>
       </div>
       <ul className={cn('grid gap-3 p-5 pt-3', !compact && 'sm:grid-cols-2')}>
@@ -25,18 +25,18 @@ export function PromotePanel({ compact, className }: { compact?: boolean; classN
           <p className="flex items-center gap-2 text-sm font-semibold text-navy">
             <Sparkles className="h-4 w-4 text-amber-500" /> Featured Listing
           </p>
-          <p className="mt-1 text-xs text-slate-500">Tampil di urutan atas beranda & hasil pencarian rute terkait.</p>
+          <p className="mt-1 text-xs text-slate-500">Tampil di urutan atas.</p>
         </li>
         <li className="rounded-xl border border-border p-3">
           <p className="flex items-center gap-2 text-sm font-semibold text-navy">
             <Radio className="h-4 w-4 text-amber-500" /> Broadcast
           </p>
-          <p className="mt-1 text-xs text-slate-500">Kirim info perjalanan ke pengguna yang menyimpan rute serupa.</p>
+          <p className="mt-1 text-xs text-slate-500">Kirim info ke peminat rute.</p>
         </li>
       </ul>
       <div className="px-5 pb-5">
         <Button variant="outline" className="w-full" disabled aria-disabled>
-          Segera Hadir — belum bisa dibeli
+          Segera hadir
         </Button>
       </div>
     </Card>

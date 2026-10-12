@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from '@/app/App';
 import { initStore } from '@/services/store';
+import '@fontsource-variable/manrope';
 import '@/styles/index.css';
 
 initStore();

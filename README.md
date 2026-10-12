@@ -117,6 +117,14 @@ Don't enter passwords, ID numbers, sensitive documents, or real payment details.
 
 ---
 
+## Design system
+
+- **Theme:** light and dark, following the system setting by default. Users can override it under Profil → Tampilan or in the account menu. All colors are CSS-variable tokens defined once in `tailwind.config.js` (the `PALETTE` object), so Tailwind classes like `bg-white` and `text-navy` switch automatically between modes. `deep`, `snow` and `mint` are fixed tones for text placed over photos.
+- **Contrast:** text and button token pairs meet WCAG AA in both themes. Turquoise buttons use dark text (`text-deep`), because white on #16B8A6 is only about 2.5:1.
+- **Typography:** Manrope, self-hosted through `@fontsource-variable` (no Google Fonts request). Prices and kg use tabular numbers (the `.num` class).
+- **Photography:** Unsplash photos stored in `public/images/`, with credits in `public/images/CREDITS.md`. Listing covers pick a photo by origin city, or by the first product's category for shopping listings (`src/data/images.ts`). A photo supplied by the owner always takes priority, and a styled gradient appears if an image fails to load.
+- **Writing style:** no emoji (flags are shown as `SA`/`ID` country-code tags), no em-dashes, and no exclamation marks in system messages.
+
 ## Project structure
 
 ```text

@@ -16,14 +16,14 @@ export function CreateListingPage() {
   const type: ListingType | null = t === 'weight' || t === 'shopping' ? t : null;
 
   return (
-    <RequireUser reason="Pilih akun demo (mis. Ahmad atau Nadia) untuk memasang listing.">
+    <RequireUser reason="Pilih akun demo untuk memasang listing.">
       {(user) => (
         <div className="container py-6 sm:py-10">
           {!type ? (
             <TypeChooser onPick={(tp) => setParams({ type: tp })} />
           ) : (
             <>
-              <PageHeader title={type === 'weight' ? 'Pasang Jastip Diaspora' : 'Pasang Jastip Shopping'} description="Isi langkah demi langkah. Anda bisa menyimpan draf kapan saja." className="mx-auto max-w-3xl" />
+              <PageHeader title={type === 'weight' ? 'Pasang Jastip Diaspora' : 'Pasang Jastip Shopping'} description="Simpan draf kapan saja." className="mx-auto max-w-3xl" />
               <ListingWizard key={type} mode="create" initial={emptyForm(type)} userId={user.id} onBackToType={() => setParams({})} />
             </>
           )}
@@ -39,22 +39,22 @@ function TypeChooser({ onPick }: { onPick: (t: ListingType) => void }) {
       type: 'weight',
       icon: <Plane />,
       title: 'Jastip Diaspora',
-      text: 'Tawarkan sisa kuota bagasi perjalananmu. Penitip membayar per kg.',
-      points: ['Atur total kg & biaya/kg', 'Kuota berkurang otomatis saat inquiry diterima', 'Cocok untuk traveler & pekerja migran'],
+      text: 'Tawarkan sisa bagasi. Bayar per kg.',
+      points: ['Atur total kg & biaya/kg', 'Cocok untuk traveler'],
       tone: 'bg-navy text-white',
     },
     {
       type: 'shopping',
       icon: <ShoppingBag />,
       title: 'Jastip Shopping',
-      text: 'Buka PO produk dari kotamu: kurma, cokelat, fashion muslim, dan lainnya.',
-      points: ['Katalog banyak produk dengan stok', 'Stok direservasi saat pesanan diterima', 'Cegah overselling otomatis'],
-      tone: 'bg-teal-500 text-white',
+      text: 'Buka PO produk dari kotamu.',
+      points: ['Katalog banyak produk dengan stok', 'Stok direservasi saat pesanan diterima'],
+      tone: 'bg-teal-500 text-deep',
     },
   ];
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Pasang listing" description="Langkah 1 — pilih jenis listing yang ingin Anda buat." />
+      <PageHeader title="Pasang listing" description="Pilih jenis listing." />
       <div className="grid gap-4 sm:grid-cols-2">
         {options.map((o) => (
           <button
@@ -83,7 +83,7 @@ function TypeChooser({ onPick }: { onPick: (t: ListingType) => void }) {
         <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500">
           Preloved / Moving Sale · Ekspedisi · Komunitas <ComingSoonBadge />
         </p>
-        <p className="mt-1 text-xs text-slate-400">Kategori ini belum bisa dipasang di versi demo.</p>
+        <p className="mt-1 text-xs text-slate-400">Belum tersedia.</p>
       </div>
     </div>
   );

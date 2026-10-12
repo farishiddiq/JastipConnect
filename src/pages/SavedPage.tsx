@@ -13,17 +13,17 @@ export function SavedPage() {
   const saved = ids.map((id) => views.find((v) => v.listing.id === id)).filter((v): v is NonNullable<typeof v> => !!v && v.status !== 'draft');
 
   return (
-    <RequireUser reason="Pilih akun demo untuk melihat listing yang Anda simpan.">
+    <RequireUser reason="Pilih akun demo untuk melihat simpanan.">
       {() => (
         <div className="container py-6 sm:py-10">
-          <PageHeader title="Disimpan" description="Listing yang Anda tandai untuk dilihat lagi nanti." />
+          <PageHeader title="Disimpan" description="Listing yang Anda simpan." />
           {saved.length ? (
             <ListingGrid views={saved} className="xl:grid-cols-4" />
           ) : (
             <EmptyState
               icon={<Bookmark />}
               title="Belum ada listing tersimpan"
-              description="Ketuk ikon penanda di kartu listing untuk menyimpannya di sini."
+              description="Ketuk ikon simpan di kartu listing."
               action={
                 <Button asChild>
                   <Link to="/explore">Jelajahi listing</Link>

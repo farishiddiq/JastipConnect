@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeftRight, Search, SearchX, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SearchX, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox, Field, Input, Select } from '@/components/ui/form';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -65,7 +65,7 @@ export function ExplorePage() {
   return (
     <div className="container py-6 sm:py-8">
       <div className="mb-5 flex flex-col gap-4">
-        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">Jelajahi listing</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-navy sm:text-3xl">Jelajahi listing</h1>
         <form
           role="search"
           onSubmit={(e) => {
@@ -91,18 +91,18 @@ export function ExplorePage() {
           <Button variant="outline" className="h-12 lg:hidden" onClick={() => setSheetOpen(true)} aria-label="Buka filter">
             <SlidersHorizontal />
             <span className="hidden sm:inline">Filter</span>
-            {activeCount > 0 && <span className="rounded-full bg-teal-500 px-1.5 text-[11px] leading-5 text-white">{activeCount}</span>}
+            {activeCount > 0 && <span className="rounded-full bg-teal-700 px-1.5 text-[11px] leading-5 text-white">{activeCount}</span>}
           </Button>
         </form>
 
         <TypeSegment value={filters.type} onChange={(type) => update({ type })} />
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
+      <div className="grid gap-10 lg:grid-cols-[300px_1fr]">
         <aside className="hidden lg:block" aria-label="Filter">
-          <div className="sticky top-24 rounded-2xl border border-border bg-white p-5 shadow-card">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-bold text-navy">Filter</h2>
+          <div className="sticky top-24 rounded-[2rem] bg-slate-100 p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-navy">Filter</h2>
               {(activeCount > 0 || filters.q) && (
                 <button type="button" onClick={clearAll} className="text-sm font-semibold text-teal-700 hover:underline">
                   Hapus semua
@@ -113,14 +113,14 @@ export function ExplorePage() {
           </div>
         </aside>
 
-        <section aria-labelledby="results-heading" className="min-w-0">
+        <section aria-labelledby="results-heading" className="min-w-0 rounded-[2rem] bg-slate-100 p-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <p id="results-heading" className="text-sm text-slate-500" aria-live="polite">
               <span className="font-bold text-navy">{results.length}</span> listing ditemukan
-              {!filters.includeClosed && <span> · hanya yang masih buka</span>}
+              {!filters.includeClosed && <span className="max-sm:hidden"> · hanya yang masih buka</span>}
             </p>
             <div className="flex items-center gap-2">
-              <label htmlFor="sort" className="text-sm text-slate-500">
+              <label htmlFor="sort" className="hidden text-sm text-slate-500 sm:block">
                 Urutkan
               </label>
               <Select id="sort" value={filters.sort} onChange={(e) => update({ sort: e.target.value as SortKey })} className="h-10 w-auto text-sm">
@@ -157,17 +157,17 @@ export function ExplorePage() {
 
           {filters.sort.startsWith('price') && !filters.cur && (
             <p className="mb-4 rounded-xl bg-slate-100 px-3 py-2 text-[13px] text-slate-600">
-              Harga diurutkan per mata uang (IDR lalu SAR). Pilih mata uang di filter untuk perbandingan yang adil — kami tidak mengonversi kurs.
+              Diurutkan per mata uang. Pilih mata uang di filter agar adil.
             </p>
           )}
 
           {results.length ? (
-            <ListingGrid views={results} className="xl:grid-cols-3" />
+            <ListingGrid views={results} compact className="lg:!grid-cols-3 xl:!grid-cols-4" />
           ) : (
             <EmptyState
               icon={<SearchX />}
               title="Tidak ada listing yang cocok"
-              description="Coba ubah kata kunci, perluas rentang tanggal, atau tampilkan juga listing yang sudah penuh/ditutup."
+              description="Ubah kata kunci atau filter."
               action={
                 <>
                   <Button onClick={clearAll}>Hapus semua filter</Button>
@@ -241,133 +241,103 @@ function FilterFields({ filters: f, update, idPrefix }: { filters: ExploreFilter
   const destCities = getCountry(f.dc)?.cities ?? COUNTRIES.flatMap((c) => c.cities);
   const priceError =
     f.pmin && f.pmax && Number(f.pmin) > Number(f.pmax) ? 'Harga minimum lebih besar dari maksimum.' : undefined;
+  const field = 'px-4';
 
   return (
-    <div className="space-y-5">
-      <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-bold text-navy">Arah perjalanan</legend>
-        <div className="grid grid-cols-2 gap-2">
-          <DirectionButton active={f.oc === 'SA' && f.dc === 'ID'} onClick={() => update({ oc: 'SA', dc: 'ID', ocity: '', dcity: '' })}>
-            🇸🇦 → 🇮🇩
+    <div className="divide-y divide-slate-300/60 [&>*]:py-6 [&>:first-child]:pt-2 [&>:last-child]:pb-0">
+      <div role="group" className="space-y-4">
+        <p className="text-sm font-semibold text-navy">Arah</p>
+        <div className="grid grid-cols-3 gap-2">
+          <DirectionButton active={!f.oc && !f.dc} onClick={() => update({ oc: '', dc: '', ocity: '', dcity: '' })}>
+            Semua
           </DirectionButton>
-          <DirectionButton active={f.oc === 'ID' && f.dc === 'SA'} onClick={() => update({ oc: 'ID', dc: 'SA', ocity: '', dcity: '' })}>
-            🇮🇩 → 🇸🇦
+          <DirectionButton active={f.oc === 'SA' && f.dc === 'ID'} onClick={() => update({ oc: 'SA', dc: 'ID', ocity: '', dcity: '' })} label="Arab Saudi ke Indonesia">
+            SA → ID
+          </DirectionButton>
+          <DirectionButton active={f.oc === 'ID' && f.dc === 'SA'} onClick={() => update({ oc: 'ID', dc: 'SA', ocity: '', dcity: '' })} label="Indonesia ke Arab Saudi">
+            ID → SA
           </DirectionButton>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Field id={id('oc')} label={<span className="text-[13px]">Negara asal</span>}>
-            <Select value={f.oc} onChange={(e) => update({ oc: e.target.value, ocity: '' })}>
-              <option value="">Semua</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field id={id('ocity')} label={<span className="text-[13px]">Kota asal</span>}>
-            <Select value={f.ocity} onChange={(e) => update({ ocity: e.target.value })}>
-              <option value="">Semua</option>
-              {originCities.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={() => update({ oc: f.dc, ocity: f.dcity, dc: f.oc, dcity: f.ocity })}
-            className="flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-teal-700 hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-          >
-            <ArrowLeftRight className="h-4 w-4" /> Tukar arah
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Field id={id('dc')} label={<span className="text-[13px]">Negara tujuan</span>}>
-            <Select value={f.dc} onChange={(e) => update({ dc: e.target.value, dcity: '' })}>
-              <option value="">Semua</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field id={id('dcity')} label={<span className="text-[13px]">Kota tujuan</span>}>
-            <Select value={f.dcity} onChange={(e) => update({ dcity: e.target.value })}>
-              <option value="">Semua</option>
-              {destCities.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-      </fieldset>
+        <Field id={id('ocity')} label="Kota asal">
+          <Select className={field} value={f.ocity} onChange={(e) => update({ ocity: e.target.value })}>
+            <option value="">Semua kota</option>
+            {originCities.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field id={id('dcity')} label="Kota tujuan">
+          <Select className={field} value={f.dcity} onChange={(e) => update({ dcity: e.target.value })}>
+            <option value="">Semua kota</option>
+            {destCities.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
 
-      <fieldset>
-        <legend className="mb-2 text-sm font-bold text-navy">Tanggal berangkat</legend>
-        <div className="grid grid-cols-2 gap-2">
-          <Field id={id('from')} label={<span className="text-[13px]">Dari</span>}>
-            <Input type="date" value={f.from} max={f.to || undefined} onChange={(e) => update({ from: e.target.value })} />
-          </Field>
-          <Field id={id('to')} label={<span className="text-[13px]">Sampai</span>}>
-            <Input type="date" value={f.to} min={f.from || undefined} onChange={(e) => update({ to: e.target.value })} />
-          </Field>
-        </div>
-      </fieldset>
+      <div role="group" className="space-y-4">
+        <p className="text-sm font-semibold text-navy">Tanggal berangkat</p>
+        <Field id={id('from')} label="Dari">
+          <Input className={field} type="date" value={f.from} max={f.to || undefined} onChange={(e) => update({ from: e.target.value })} />
+        </Field>
+        <Field id={id('to')} label="Sampai">
+          <Input className={field} type="date" value={f.to} min={f.from || undefined} onChange={(e) => update({ to: e.target.value })} />
+        </Field>
+      </div>
 
-      <fieldset>
-        <legend className="mb-2 text-sm font-bold text-navy">Harga</legend>
-        <Field id={id('cur')} label={<span className="text-[13px]">Mata uang</span>} hint="Harga hanya dibandingkan dalam mata uang yang sama.">
-          <Select value={f.cur} onChange={(e) => update({ cur: e.target.value as ExploreFilters['cur'], pmin: '', pmax: '' })}>
-            <option value="">Semua mata uang</option>
+      <div role="group" className="space-y-4">
+        <p className="text-sm font-semibold text-navy">Harga</p>
+        <Field id={id('cur')} label="Mata uang" hint="Tanpa konversi kurs.">
+          <Select className={field} value={f.cur} onChange={(e) => update({ cur: e.target.value as ExploreFilters['cur'], pmin: '', pmax: '' })}>
+            <option value="">Semua</option>
             <option value="SAR">SAR (Riyal)</option>
             <option value="IDR">IDR (Rupiah)</option>
           </Select>
         </Field>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <Field id={id('pmin')} label={<span className="text-[13px]">Min</span>}>
+        <div className="grid grid-cols-2 gap-3">
+          <Field id={id('pmin')} label="Min">
             <Input
+              className={field}
               type="number"
               inputMode="decimal"
               min={0}
               disabled={!f.cur}
               value={f.pmin}
               onChange={(e) => update({ pmin: e.target.value })}
-              placeholder={f.cur ? '0' : 'Pilih mata uang'}
+              placeholder="0"
             />
           </Field>
-          <Field id={id('pmax')} label={<span className="text-[13px]">Maks</span>} error={priceError}>
-            <Input type="number" inputMode="decimal" min={0} disabled={!f.cur} value={f.pmax} onChange={(e) => update({ pmax: e.target.value })} placeholder="∞" />
+          <Field id={id('pmax')} label="Maks" error={priceError}>
+            <Input className={field} type="number" inputMode="decimal" min={0} disabled={!f.cur} value={f.pmax} onChange={(e) => update({ pmax: e.target.value })} placeholder="∞" />
           </Field>
         </div>
-        <p className="mt-1.5 text-xs text-slate-400">Jastip Diaspora: biaya per kg. Shopping: harga produk termurah.</p>
-      </fieldset>
+      </div>
 
       <Checkbox
         checked={f.includeClosed}
         onChange={(e) => update({ includeClosed: e.target.checked })}
-        label="Tampilkan juga yang penuh, ditutup, atau lewat batas"
-        description="Secara default hanya listing yang masih buka."
+        className="!rounded-none"
+        label="Termasuk penuh atau ditutup"
       />
     </div>
   );
 }
 
-function DirectionButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function DirectionButton({ active, onClick, children, label }: { active: boolean; onClick: () => void; children: React.ReactNode; label?: string }) {
   return (
     <button
       type="button"
       aria-pressed={active}
+      aria-label={label}
       onClick={onClick}
       className={cn(
-        'h-11 rounded-xl border text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
-        active ? 'border-teal-400 bg-teal-50' : 'border-border bg-white hover:bg-slate-50',
+        'flex h-11 items-center justify-center gap-1.5 rounded-xl border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
+        active ? 'border-teal-500 bg-teal-50 text-teal-800' : 'border-border bg-white text-slate-600 hover:bg-slate-50',
       )}
     >
       {children}
@@ -402,12 +372,12 @@ function buildChips(f: ExploreFilters, update: (p: Partial<ExploreFilters>) => v
     chips.push({ label: `Ke: ${f.dcity || getCountry(f.dc)?.name}`, remove: () => update({ dc: '', dcity: '' }) });
   if (f.from || f.to)
     chips.push({
-      label: `Berangkat ${f.from ? formatDateShort(f.from) : '…'} – ${f.to ? formatDateShort(f.to) : '…'}`,
+      label: `Berangkat ${f.from ? formatDateShort(f.from) : '…'} - ${f.to ? formatDateShort(f.to) : '…'}`,
       remove: () => update({ from: '', to: '' }),
     });
   if (f.cur)
     chips.push({
-      label: `${f.cur}${f.pmin || f.pmax ? ` ${f.pmin || 0}–${f.pmax || '∞'}` : ''}`,
+      label: `${f.cur}${f.pmin || f.pmax ? ` ${f.pmin || 0}-${f.pmax || '∞'}` : ''}`,
       remove: () => update({ cur: '', pmin: '', pmax: '' }),
     });
   if (f.includeClosed) chips.push({ label: 'Termasuk penuh/ditutup', remove: () => update({ includeClosed: false }) });

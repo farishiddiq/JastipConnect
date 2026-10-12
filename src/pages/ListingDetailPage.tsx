@@ -2,10 +2,6 @@ import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  CalendarClock,
-  CalendarDays,
-  CalendarRange,
-  CheckCircle2,
   Eye,
   Info,
   Inbox,
@@ -31,7 +27,7 @@ import {
   ProductThumb,
   RouteDisplay,
   StarRating,
-  TypeBadge,
+  TYPE_LABEL,
   VerificationLabel,
 } from '@/components/shared/display';
 import { SafetyNotice } from '@/components/shared/SafetyNotice';
@@ -49,8 +45,8 @@ import { formatCountdown, formatDate, formatKg, formatMoney, formatMoneyGroups, 
 import { cn } from '@/lib/utils';
 
 const BLOCK_REASON: Record<string, string> = {
-  closed: 'Listing ini sudah ditutup oleh penyedia, jadi tidak menerima inquiry baru.',
-  full: 'Kuota/stok sudah habis. Simpan listing ini atau cari listing lain dengan rute serupa.',
+  closed: 'Listing ditutup penyedia.',
+  full: 'Kuota habis. Simpan atau cari rute serupa.',
   expired: 'Batas waktu titip/pesan sudah lewat.',
   draft: 'Listing ini masih draf dan belum diterbitkan.',
 };
@@ -76,7 +72,7 @@ export function ListingDetailPage() {
         <EmptyState
           icon={<Package />}
           title="Listing tidak ditemukan"
-          description="Listing ini mungkin sudah dihapus atau tautannya salah."
+          description="Tautan salah atau listing dihapus."
           action={
             <Button asChild>
               <Link to="/explore">Jelajahi listing lain</Link>
@@ -133,41 +129,36 @@ function ListingDetail({ view }: { view: ListingView }) {
       {status === 'draft' && (
         <div className="mb-4 flex items-start gap-3 rounded-2xl bg-sky-50 p-4 text-sm text-sky-900 ring-1 ring-sky-200">
           <Info className="mt-0.5 h-5 w-5 shrink-0" />
-          <p>Ini pratinjau draf. Hanya Anda yang dapat melihatnya. Lengkapi dan terbitkan lewat tombol Edit.</p>
+          <p>Draf, hanya Anda yang melihat. Terbitkan lewat Edit.</p>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px] lg:gap-8">
         <div className="min-w-0 space-y-6">
-          <div className={cn('relative aspect-[16/9] overflow-hidden rounded-3xl sm:aspect-[21/9]', status !== 'open' && status !== 'draft' && 'saturate-[0.5]')}>
+          <div className={cn('relative aspect-[2/1] overflow-hidden rounded-2xl sm:aspect-[21/9] sm:rounded-3xl', status !== 'open' && status !== 'draft' && 'saturate-[0.5]')}>
             <ListingCover listing={l} />
             <SaveButton listingId={l.id} className="absolute right-4 top-4" />
           </div>
 
           <header className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <TypeBadge type={l.type} />
+            <p className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+              {TYPE_LABEL[l.type]}
               <ListingStatusBadge status={status} type={l.type} />
               {l.closedByAdmin && <Badge tone="red">Ditutup moderator</Badge>}
-            </div>
-            <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-navy sm:text-3xl">{l.title}</h1>
-            <RouteDisplay listing={l} size="lg" />
-            <p className="text-sm text-slate-500">
-              {l.origin.country} → {l.destination.country}
             </p>
+            <h1 className="text-2xl font-bold leading-[1.15] text-navy sm:text-4xl">{l.title}</h1>
+            <RouteDisplay listing={l} size="md" className="text-slate-600" />
           </header>
 
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Fact icon={<CalendarDays />} label="Berangkat" value={formatDate(l.departureDate)} sub={formatCountdown(l.departureDate)} />
-            <Fact icon={<CalendarRange />} label="Kembali" value={l.returnDate ? formatDate(l.returnDate) : '—'} />
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border py-4 sm:grid-cols-3 sm:py-5">
+            <Fact label="Berangkat" value={formatDate(l.departureDate)} sub={formatCountdown(l.departureDate)} />
+            {l.returnDate && <Fact label="Kembali" value={formatDate(l.returnDate)} />}
             <Fact
-              icon={<CalendarClock />}
               label={l.type === 'weight' ? 'Batas titip' : 'Batas pesan'}
               value={formatDate(l.orderDeadline)}
               sub={formatCountdown(l.orderDeadline)}
               highlight={status === 'open'}
             />
-            <Fact icon={<MapPin />} label="Serah terima" value={l.handoverMethod?.split('(')[0]?.trim() || '—'} />
           </dl>
 
           {l.type === 'weight' ? (
@@ -175,7 +166,7 @@ function ListingDetail({ view }: { view: ListingView }) {
           ) : (
             <section aria-labelledby="catalog-title">
               <div className="mb-3 flex items-end justify-between">
-                <h2 id="catalog-title" className="text-lg font-extrabold text-navy">
+                <h2 id="catalog-title" className="text-xl font-semibold text-navy">
                   Katalog produk
                 </h2>
                 <span className="text-sm text-slate-500">{l.products.length} produk</span>
@@ -218,48 +209,36 @@ function ListingDetail({ view }: { view: ListingView }) {
             </section>
           )}
 
-          <section className="space-y-4" aria-labelledby="desc-title">
-            <h2 id="desc-title" className="text-lg font-extrabold text-navy">
+          <section aria-labelledby="desc-title">
+            <h2 id="desc-title" className="text-xl font-semibold text-navy">
               Detail
             </h2>
-            <p className="whitespace-pre-line leading-relaxed text-slate-700">{l.description || '—'}</p>
-            {l.type === 'weight' && l.permittedItemsNote && (
-              <InfoBlock icon={<CheckCircle2 className="text-emerald-600" />} title="Barang yang diterima">
-                {l.permittedItemsNote}
-              </InfoBlock>
-            )}
-            {l.prohibitedItemsNote && (
-              <InfoBlock icon={<XCircle className="text-red-500" />} title="Barang yang tidak diterima">
-                {l.prohibitedItemsNote}
-              </InfoBlock>
-            )}
-            {l.handoverMethod && (
-              <InfoBlock icon={<Repeat className="text-teal-600" />} title="Cara serah terima">
-                {l.handoverMethod}
-              </InfoBlock>
-            )}
-            <InfoBlock icon={<Info className="text-navy-400" />} title="Syarat & ketentuan">
-              {l.terms || '—'}
-            </InfoBlock>
+            <p className="mt-3 max-w-[65ch] whitespace-pre-line leading-relaxed text-slate-700">{l.description || '-'}</p>
+            <div className="mt-6 divide-y divide-border border-t border-border">
+              {l.type === 'weight' && l.permittedItemsNote && <InfoBlock title="Diterima">{l.permittedItemsNote}</InfoBlock>}
+              {l.prohibitedItemsNote && <InfoBlock title="Tidak diterima">{l.prohibitedItemsNote}</InfoBlock>}
+              {l.handoverMethod && <InfoBlock title="Serah terima">{l.handoverMethod}</InfoBlock>}
+              <InfoBlock title="Syarat">{l.terms || '-'}</InfoBlock>
+            </div>
           </section>
 
-          <SafetyNotice />
+          <SafetyNotice variant="compact" />
 
           <div className="flex flex-wrap items-center gap-2">
-            <ShareButton path={`/listings/${l.id}`} title={l.title} text={`${l.title} — ${l.origin.city} → ${l.destination.city}`} />
+            <ShareButton path={`/listings/${l.id}`} title={l.title} text={`${l.title}: ${l.origin.city} → ${l.destination.city}`} />
             {!isOwner && <ReportButton targetType="listing" targetId={l.id} targetLabel={l.title} />}
-            <span className="ml-auto flex items-center gap-1 text-xs text-slate-400">
-              <Eye className="h-4 w-4" /> {l.viewCount} kali dilihat (penghitung lokal)
+            <span className="ml-auto hidden items-center gap-1 text-xs text-slate-400 sm:flex">
+              <Eye className="h-4 w-4" /> {l.viewCount} dilihat
             </span>
           </div>
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <Card className="p-5">
-            <PriceLabel view={view} className="[&>span:nth-child(2)]:text-2xl" />
-            {l.type === 'shopping' && <p className="mt-0.5 text-xs text-slate-500">Harga per produk sudah termasuk jasa titip</p>}
-            <AvailabilityMeter view={view} className="mt-4" />
-            <Separator className="my-4" />
+          <Card className="p-4 sm:p-5">
+            <PriceLabel view={view} className="max-lg:hidden [&_.num]:text-3xl" />
+            {l.type === 'shopping' && <p className="mt-0.5 text-[13px] text-slate-600">Sudah termasuk jasa titip</p>}
+            <AvailabilityMeter view={view} className="mt-4 max-lg:hidden" />
+            <Separator className="my-4 max-lg:hidden" />
             {isOwner ? (
               <OwnerActions view={view} />
             ) : (
@@ -281,7 +260,7 @@ function ListingDetail({ view }: { view: ListingView }) {
       {!isOwner && (
         <>
           <div className="h-20 lg:hidden" aria-hidden />
-          <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-30 border-t border-border bg-white/95 px-4 py-3 backdrop-blur md:bottom-0 lg:hidden">
+          <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] glass z-30 border-t border-border/70 px-4 py-3 md:bottom-0 lg:hidden">
             <MobileCta view={view} selection={selection} canInquire={canInquire} onStart={startInquiry} />
           </div>
         </>
@@ -311,27 +290,21 @@ function ListingDetail({ view }: { view: ListingView }) {
   );
 }
 
-function Fact({ icon, label, value, sub, highlight }: { icon: React.ReactNode; label: string; value: string; sub?: string; highlight?: boolean }) {
+function Fact({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: boolean }) {
   return (
-    <div className={cn('rounded-2xl border p-3', highlight ? 'border-amber-200 bg-amber-50/60' : 'border-border bg-white')}>
-      <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 [&_svg]:h-4 [&_svg]:w-4">
-        {icon}
-        {label}
-      </dt>
-      <dd className="mt-1 text-sm font-bold leading-snug text-navy">{value}</dd>
-      {sub && <dd className={cn('text-xs', highlight ? 'font-semibold text-amber-700' : 'text-slate-400')}>{sub}</dd>}
+    <div>
+      <dt className="text-[13px] text-slate-500">{label}</dt>
+      <dd className="mt-0.5 text-base font-semibold text-navy">{value}</dd>
+      {sub && <dd className={cn('text-[13px]', highlight ? 'font-medium text-amber-700' : 'text-slate-500')}>{sub}</dd>}
     </div>
   );
 }
 
-function InfoBlock({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function InfoBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 rounded-2xl bg-white p-4 ring-1 ring-border">
-      <span className="mt-0.5 shrink-0 [&_svg]:h-5 [&_svg]:w-5">{icon}</span>
-      <div className="min-w-0">
-        <h3 className="text-sm font-bold text-navy">{title}</h3>
-        <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">{children}</p>
-      </div>
+    <div className="grid gap-1 py-4 sm:grid-cols-[9rem_1fr] sm:gap-6">
+      <h3 className="text-sm font-semibold text-navy">{title}</h3>
+      <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">{children}</p>
     </div>
   );
 }
@@ -340,30 +313,18 @@ function WeightCapacity({ view }: { view: ListingView }) {
   const l = view.listing as WeightListing;
   const a = view.availability;
   return (
-    <section aria-labelledby="cap-title" className="rounded-3xl bg-navy p-5 text-white sm:p-6">
-      <h2 id="cap-title" className="text-sm font-semibold text-white/70">
+    <section aria-labelledby="cap-title">
+      <h2 id="cap-title" className="text-xl font-semibold text-navy">
         Kuota bagasi
       </h2>
-      <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-        <div>
-          <p className="text-2xl font-extrabold sm:text-3xl">{formatKg(l.capacityKg)}</p>
-          <p className="text-xs text-white/60">Total</p>
-        </div>
-        <div>
-          <p className="text-2xl font-extrabold text-teal-300 sm:text-3xl">{formatKg(a.reserved)}</p>
-          <p className="text-xs text-white/60">Diterima</p>
-        </div>
-        <div>
-          <p className="text-2xl font-extrabold text-amber-300 sm:text-3xl">{formatKg(a.remaining)}</p>
-          <p className="text-xs text-white/60">Sisa</p>
-        </div>
+      <p className="num mt-2 text-3xl font-bold text-navy sm:mt-3 sm:text-4xl">
+        {formatKg(a.remaining)} <span className="text-lg font-medium text-slate-500">tersisa</span>
+      </p>
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-teal-500 transition-[width] duration-500 ease-spring" style={{ width: `${Math.min(100, a.ratio * 100)}%` }} />
       </div>
-      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/15">
-        <div className="h-full rounded-full bg-teal-400" style={{ width: `${Math.min(100, a.ratio * 100)}%` }} />
-      </div>
-      <p className="mt-3 text-xs text-white/60">
-        Biaya {formatMoney(l.pricePerKg, l.currency)}/kg. Kuota hanya berkurang ketika penyedia menerima inquiry.
-        {l.returnLegDropOff && ' Titipan dapat diserahkan untuk perjalanan pulang.'}
+      <p className="num mt-2 text-sm text-slate-500">
+        {formatKg(a.reserved)} diterima dari {formatKg(l.capacityKg)} · {formatMoney(l.pricePerKg, l.currency)}/kg
       </p>
     </section>
   );
@@ -387,14 +348,14 @@ function BuyerCta({
   return (
     <div className="space-y-3">
       {myInquiries.length > 0 && (
-        <div className="rounded-xl bg-teal-50 p-3 text-sm ring-1 ring-teal-200">
-          <p className="font-semibold text-teal-900">Inquiry Anda di listing ini</p>
+        <div className="rounded-2xl bg-slate-100 p-3.5 text-sm">
+          <p className="font-bold text-navy">Inquiry Anda di listing ini</p>
           <ul className="mt-2 space-y-1.5">
             {myInquiries.map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-2">
                 <InquiryStatusBadge status={i.status} />
                 {i.conv && (
-                  <Link to={`/inbox/${i.conv}`} className="text-[13px] font-semibold text-teal-700 hover:underline">
+                  <Link to={`/inbox/${i.conv}`} className="text-[13px] font-bold text-teal-800 hover:underline">
                     Buka percakapan →
                   </Link>
                 )}
@@ -416,7 +377,7 @@ function BuyerCta({
                 <span className="font-extrabold text-navy">{formatMoneyGroups(totals)}</span>
               </div>
             ) : (
-              <p className="text-[13px] text-slate-500">Pilih jumlah produk di katalog, lalu ajukan pesanan.</p>
+              <p className="text-[13px] font-medium text-slate-700">Pilih produk di katalog.</p>
             )}
             <Button variant="accent" size="lg" className="w-full" onClick={onStart} disabled={count === 0}>
               <ShoppingBag /> Ajukan Pesanan
@@ -431,7 +392,7 @@ function BuyerCta({
           <p className="text-[13px] text-slate-500">{BLOCK_REASON[view.status]}</p>
         </>
       )}
-      <p className="text-center text-[11px] text-slate-400">Tanpa pembayaran di platform · koordinasi via inbox</p>
+      <p className="text-center text-xs text-slate-600">Pembayaran di luar platform</p>
     </div>
   );
 }
@@ -485,7 +446,7 @@ function OwnerActions({ view }: { view: ListingView }) {
   const onClose = async () => {
     const okay = await confirm({
       title: 'Tutup listing ini?',
-      description: 'Listing tidak akan menerima inquiry baru. Inquiry yang sudah ada tetap bisa diproses. Anda dapat membukanya kembali selama batas waktu belum lewat.',
+      description: 'Tidak menerima inquiry baru. Bisa dibuka lagi selama batas waktu belum lewat.',
       confirmLabel: 'Tutup listing',
       destructive: true,
     });
@@ -503,11 +464,11 @@ function OwnerActions({ view }: { view: ListingView }) {
       <p className="text-sm font-semibold text-navy">Listing milik Anda</p>
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
         <div className="rounded-xl bg-slate-50 p-2">
-          <p className="text-lg font-extrabold text-navy">{l.viewCount}</p>
+          <p className="text-xl font-semibold text-navy">{l.viewCount}</p>
           <p className="text-slate-500">dilihat</p>
         </div>
         <div className="rounded-xl bg-slate-50 p-2">
-          <p className="text-lg font-extrabold text-navy">{mine.length}</p>
+          <p className="text-xl font-semibold text-navy">{mine.length}</p>
           <p className="text-slate-500">inquiry</p>
         </div>
         <div className="rounded-xl bg-amber-50 p-2">
@@ -540,8 +501,8 @@ function OwnerActions({ view }: { view: ListingView }) {
           </Button>
         )}
       </div>
-      {l.closedByAdmin && <p className="text-xs text-red-600">Ditutup oleh moderator demo. Hubungi admin untuk peninjauan ulang.</p>}
-      {view.status === 'expired' && <p className="text-xs text-slate-500">Batas waktu lewat. Edit tanggal untuk menerima inquiry lagi.</p>}
+      {l.closedByAdmin && <p className="text-xs text-red-600">Ditutup moderator.</p>}
+      {view.status === 'expired' && <p className="text-xs text-slate-500">Batas lewat. Edit tanggal untuk membuka lagi.</p>}
     </div>
   );
 }
@@ -552,13 +513,13 @@ function ProviderCard({ ownerId, owner }: { ownerId: string; owner?: import('@/t
   if (!owner) return null;
   return (
     <Card className="p-5">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Penyedia</p>
+      <p className="mb-3 text-sm font-bold text-navy">Penyedia</p>
       <Link to={`/providers/${owner.id}`} className="group flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
         <Avatar user={owner} size={52} />
         <div className="min-w-0">
           <p className="truncate font-bold text-navy group-hover:text-teal-700">{owner.displayName}</p>
-          <p className="flex items-center gap-1 text-[13px] text-slate-500">
-            <MapPin className="h-3.5 w-3.5" /> {owner.city ?? '—'} · sejak {formatMonthYear(owner.joinedAt)}
+          <p className="flex items-center gap-1 text-[13px] text-slate-600">
+            <MapPin className="h-3.5 w-3.5" /> {owner.city ?? '-'} · sejak {formatMonthYear(owner.joinedAt)}
           </p>
         </div>
       </Link>
@@ -568,17 +529,17 @@ function ProviderCard({ ownerId, owner }: { ownerId: string; owner?: import('@/t
           <span className="flex items-center gap-1.5 text-sm">
             <StarRating value={rating.average} size={14} />
             <span className="font-semibold text-navy">{rating.average.toFixed(1)}</span>
-            <span className="text-slate-400">({rating.count})</span>
+            <span className="text-slate-600">({rating.count})</span>
           </span>
         ) : (
-          <span className="text-xs text-slate-400">Belum ada ulasan</span>
+          <span className="text-xs text-slate-600">Belum ada ulasan</span>
         )}
       </div>
-      <p className="mt-2 text-[13px] text-slate-500">{completed} transaksi demo selesai</p>
+      <p className="mt-2 text-[13px] text-slate-600">{completed} transaksi demo selesai</p>
       <Button asChild variant="outline" size="sm" className="mt-4 w-full">
         <Link to={`/providers/${owner.id}`}>Lihat profil & ulasan</Link>
       </Button>
-      <p className="mt-3 text-[11px] leading-snug text-slate-400">Nomor telepon & alamat tidak ditampilkan. Detail serah terima dibahas di inbox setelah deal.</p>
+      <p className="mt-3 text-xs leading-snug text-slate-600">Kontak & alamat dibahas di inbox setelah deal.</p>
     </Card>
   );
 }

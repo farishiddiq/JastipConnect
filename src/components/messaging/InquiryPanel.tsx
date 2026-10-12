@@ -31,7 +31,7 @@ export function InquiryPanel({ inquiry, listing, me, other }: { inquiry: Inquiry
     if (listing.type === 'weight') {
       const rem = remainingKg(listing, inquiries);
       const ok = (inquiry.requestedKg ?? 0) <= rem;
-      capacityNote = { ok, text: ok ? `Sisa kuota ${formatKg(rem)} — cukup.` : `Sisa kuota hanya ${formatKg(rem)}. Tidak cukup untuk menerima.` };
+      capacityNote = { ok, text: ok ? `Sisa kuota ${formatKg(rem)} , cukup.` : `Sisa kuota hanya ${formatKg(rem)}. Tidak cukup untuk menerima.` };
     } else {
       const short = (inquiry.items ?? []).filter((line) => {
         const p = listing.products.find((x) => x.id === line.productId);
@@ -54,7 +54,7 @@ export function InquiryPanel({ inquiry, listing, me, other }: { inquiry: Inquiry
     run(() => acceptInquiry(inquiry.id, me.id), 'Inquiry diterima & kuota direservasi');
   };
   const onDecline = async () => {
-    if (!(await confirm({ title: 'Tolak inquiry?', description: 'Pembeli akan diberi tahu. Tindakan ini tidak dapat dibatalkan.', confirmLabel: 'Tolak', destructive: true }))) return;
+    if (!(await confirm({ title: 'Tolak inquiry?', description: 'Pembeli akan diberi tahu.', confirmLabel: 'Tolak', destructive: true }))) return;
     run(() => declineInquiry(inquiry.id, me.id), 'Inquiry ditolak');
   };
   const onCancel = async () => {
@@ -66,7 +66,7 @@ export function InquiryPanel({ inquiry, listing, me, other }: { inquiry: Inquiry
     if (
       !(await confirm({
         title: 'Konfirmasi transaksi selesai?',
-        description: 'Tandai selesai hanya jika barang sudah diserahkan/diterima. Transaksi selesai setelah kedua pihak mengonfirmasi.',
+        description: 'Konfirmasi jika barang sudah diserahkan. Selesai setelah kedua pihak konfirmasi.',
         confirmLabel: 'Ya, sudah selesai',
       }))
     )
@@ -235,7 +235,7 @@ function ReviewDialog({
     if (Object.keys(errs).length) return;
     const r = createReview(inquiry.id, buyerId, rating, comment);
     if (!r.ok) return toast.error(r.error);
-    toast.success('Terima kasih atas ulasannya!');
+    toast.success('Ulasan terkirim. Terima kasih.');
     onOpenChange(false);
   };
 
@@ -245,7 +245,7 @@ function ReviewDialog({
         <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
             <DialogTitle>Beri ulasan untuk {providerName}</DialogTitle>
-            <DialogDescription>Satu ulasan per transaksi. Ulasan tampil di profil publik penyedia.</DialogDescription>
+            <DialogDescription>Satu ulasan per transaksi.</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <div>
