@@ -43,7 +43,7 @@ export function HomePage() {
             to="/explore?type=weight"
             image={TYPE_IMAGES.weight}
             icon={<Plane className="text-sky-600" />}
-            title="Jastip Diaspora"
+            title="Jastip Bagasi"
             text="Titip di sisa bagasi traveler. Bayar per kg."
             meta={`${open.filter((v) => v.listing.type === 'weight').length} perjalanan terbuka`}
             />
@@ -51,7 +51,7 @@ export function HomePage() {
             to="/explore?type=shopping"
             image={TYPE_IMAGES.shopping}
             icon={<ShoppingBag className="text-amber-600" />}
-            title="Jastip Shopping"
+            title="Jastip Belanja"
             text="Pesan produk lewat personal shopper."
             meta={`${open.filter((v) => v.listing.type === 'shopping').length} PO terbuka`}
           />
@@ -140,7 +140,7 @@ function Hero() {
     <section className="container pt-4 sm:pt-6">
       <div className="relative overflow-hidden rounded-[2rem] bg-slate-100">
       <div className="relative grid gap-10 px-5 pb-32 pt-8 sm:pb-16 sm:pt-16 sm:px-10 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:px-14 lg:py-20">
-        <div>
+        <div className="min-w-0">
           <p className="mb-4 inline-flex sm:mb-6 items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-card">
             <span className="text-[10px] font-bold text-slate-400">SA</span> Arab Saudi <ArrowLeftRight className="h-3.5 w-3.5" /> Indonesia{' '}
             <span className="text-[10px] font-bold text-slate-400">ID</span>
@@ -168,19 +168,23 @@ function Hero() {
 
           <HeroSearch />
 
-          <div className="mt-5 flex flex-wrap items-center gap-2 sm:mt-8">
-            <span className="mr-1 text-xs text-slate-500">Populer</span>
-            {POPULAR_ROUTES.slice(0, 4).map((r, i) => (
-              <Link
-                key={`${r.from.city}-${r.to.city}`}
-                to={`/explore?oc=${r.from.countryCode}&ocity=${r.from.city}&dc=${r.to.countryCode}&dcity=${r.to.city}`}
-                aria-label={`${r.from.city} ke ${r.to.city}`}
-                title={`${r.from.city} → ${r.to.city}`}
-                className={cn('num flex min-h-[36px] items-center gap-1.5 rounded-full bg-white px-3.5 text-[13px] font-medium text-navy shadow-card transition duration-150 ease-spring hover:shadow-lift active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500', i > 2 && 'max-sm:hidden')}
-              >
-                {cityCode(r.from.city)} <span className="text-slate-400">→</span> {cityCode(r.to.city)}
-              </Link>
-            ))}
+          <div className="mt-6 flex items-center gap-2 sm:mt-8">
+            <span className="shrink-0 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-slate-500">Populer</span>
+            <div className="no-scrollbar -mr-5 flex min-w-0 items-center gap-1.5 overflow-x-auto py-1 pr-5 sm:mr-0 sm:flex-wrap sm:pr-0">
+              {POPULAR_ROUTES.slice(0, 4).map((r) => (
+                <Link
+                  key={`${r.from.city}-${r.to.city}`}
+                  to={`/explore?oc=${r.from.countryCode}&ocity=${r.from.city}&dc=${r.to.countryCode}&dcity=${r.to.city}`}
+                  aria-label={`${r.from.city} ke ${r.to.city}`}
+                  title={`${r.from.city} → ${r.to.city}`}
+                  className="num flex h-8 shrink-0 items-center gap-1 rounded-full bg-white px-3 text-[0.75rem] font-semibold text-navy shadow-card transition duration-150 ease-spring hover:shadow-lift active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                >
+                  {cityCode(r.from.city)}
+                  <span className="text-[0.625rem] font-normal text-slate-400">→</span>
+                  {cityCode(r.to.city)}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -202,8 +206,8 @@ const DIRECTIONS: [Direction, string][] = [
 ];
 const TYPES: ['' | 'weight' | 'shopping', string, string][] = [
   ['', 'Semua jenis', 'Bagasi dan belanja'],
-  ['weight', 'Jastip Diaspora', 'Titip di bagasi traveler'],
-  ['shopping', 'Jastip Shopping', 'Pesan lewat personal shopper'],
+  ['weight', 'Jastip Bagasi', 'Titip di bagasi traveler'],
+  ['shopping', 'Jastip Belanja', 'Pesan lewat personal shopper'],
 ];
 
 /** Small "Mulai cari" button that unfolds into a three-step picker: keyword, direction, type. */
@@ -441,7 +445,7 @@ function HeroVisualMobile({ open, providers, rating }: { open: number; providers
       </div>
       <div className="absolute right-0 top-0 w-[62%] rotate-[4deg] rounded-3xl bg-white p-3.5 text-navy shadow-lift">
         <p className="inline-flex items-center gap-1.5 text-xs font-bold text-navy">
-          <ShoppingBag className="h-3.5 w-3.5 text-amber-600" /> Jastip Shopping · Jeddah
+          <ShoppingBag className="h-3.5 w-3.5 text-amber-600" /> Jastip Belanja · Jeddah
         </p>
         <div className="mt-2.5 grid grid-cols-3 gap-1.5">
           {['kurma', 'cokelat', 'fashion'].map((n) => (
@@ -459,7 +463,7 @@ function HeroVisual({ open, providers, rating }: { open: number; providers: numb
       <div className="float-a absolute inset-x-2 top-0 rotate-[-3deg] rounded-3xl bg-white p-5 text-navy shadow-card">
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-50 px-2.5 py-1 text-xs font-bold text-navy">
-            <Plane className="h-3.5 w-3.5 text-sky-600" /> Jastip Diaspora
+            <Plane className="h-3.5 w-3.5 text-sky-600" /> Jastip Bagasi
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Buka
@@ -480,7 +484,7 @@ function HeroVisual({ open, providers, rating }: { open: number; providers: numb
       </div>
       <div className="float-b absolute right-0 top-[13.5rem] w-64 rotate-[4deg] rounded-3xl bg-white p-4 text-navy shadow-lift">
         <p className="inline-flex items-center gap-1.5 text-xs font-bold text-navy">
-          <ShoppingBag className="h-3.5 w-3.5 text-amber-600" /> Jastip Shopping · Jeddah
+          <ShoppingBag className="h-3.5 w-3.5 text-amber-600" /> Jastip Belanja · Jeddah
         </p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {['kurma', 'cokelat', 'fashion'].map((n) => (

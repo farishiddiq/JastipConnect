@@ -76,8 +76,8 @@ export function InquiryStatusBadge({ status }: { status: InquiryStatus }) {
 }
 
 export const TYPE_LABEL: Record<ListingType, string> = {
-  weight: 'Jastip Diaspora',
-  shopping: 'Jastip Shopping',
+  weight: 'Jastip Bagasi',
+  shopping: 'Jastip Belanja',
 };
 
 export function TypeBadge({ type, className }: { type: ListingType; className?: string }) {

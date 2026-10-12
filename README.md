@@ -4,8 +4,8 @@
 
 JastipConnect is a demo of a jastip (personal-courier) marketplace for the Indonesian diaspora, starting with the Saudi Arabia ↔ Indonesia corridor. It's a mobile-first web app with two listing types:
 
-- **Jastip Diaspora (by weight):** a traveler posts a route, dates, spare baggage (kg), a fee per kg, and a last drop-off date. Buyers ask about sending items by giving an estimated weight.
-- **Jastip Shopping (by item):** a personal shopper posts a catalog of products (price, stock, order deadline). Buyers order products by quantity.
+- **Jastip Bagasi (by weight):** a traveler posts a route, dates, spare baggage (kg), a fee per kg, and a last drop-off date. Buyers ask about sending items by giving an estimated weight.
+- **Jastip Belanja (by item):** a personal shopper posts a catalog of products (price, stock, order deadline). Buyers order products by quantity.
 
 The app is built with React, TypeScript, Vite, Tailwind CSS, and shadcn-style components (Radix primitives). It uses lucide-react icons, React Router, and sonner for toasts.
 **All data lives in the browser's `localStorage`. There is no backend.**
@@ -34,7 +34,7 @@ npm run preview   # serve the dist/ build
 3. Fill in the inquiry (for example, 4 kg). You're taken to the conversation in the Inbox.
 4. Click **"Balas sebagai Ahmad"** in the chat header to switch to the provider account. Click **Terima** and the quota drops from 15 kg to 11 kg. Send a message.
 5. Click **Tandai selesai** as Ahmad. Switch back to Aisyah and click **Konfirmasi selesai**. Then click **Beri ulasan** to leave a review (one review per transaction).
-6. As **Ahmad**, go to `/post` → Jastip Diaspora. Fill in the wizard and publish. Refresh the page and the listing is still there.
+6. As **Ahmad**, go to `/post` → Jastip Bagasi. Fill in the wizard and publish. Refresh the page and the listing is still there.
 7. Open a listing that isn't yours, click **Laporkan**, then switch to **Admin Demo** and go to `/admin` to moderate it.
 8. Go to `/profile` → **Reset Data Demo** to restore the initial data.
 

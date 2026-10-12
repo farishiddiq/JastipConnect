@@ -211,8 +211,8 @@ export function ExplorePage() {
 function TypeSegment({ value, onChange }: { value: ExploreFilters['type']; onChange: (v: ExploreFilters['type']) => void }) {
   const items: [ExploreFilters['type'], string][] = [
     ['', 'Semua'],
-    ['weight', 'Jastip Diaspora'],
-    ['shopping', 'Jastip Shopping'],
+    ['weight', 'Jastip Bagasi'],
+    ['shopping', 'Jastip Belanja'],
   ];
   return (
     <div role="radiogroup" aria-label="Kategori" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
@@ -365,7 +365,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
 
 function buildChips(f: ExploreFilters, update: (p: Partial<ExploreFilters>) => void) {
   const chips: { label: string; remove: () => void }[] = [];
-  if (f.type) chips.push({ label: f.type === 'weight' ? 'Jastip Diaspora' : 'Jastip Shopping', remove: () => update({ type: '' }) });
+  if (f.type) chips.push({ label: f.type === 'weight' ? 'Jastip Bagasi' : 'Jastip Belanja', remove: () => update({ type: '' }) });
   if (f.oc || f.ocity)
     chips.push({ label: `Dari: ${f.ocity || getCountry(f.oc)?.name}`, remove: () => update({ oc: '', ocity: '' }) });
   if (f.dc || f.dcity)

@@ -23,7 +23,7 @@ export function CreateListingPage() {
             <TypeChooser onPick={(tp) => setParams({ type: tp })} />
           ) : (
             <>
-              <PageHeader title={type === 'weight' ? 'Pasang Jastip Diaspora' : 'Pasang Jastip Shopping'} description="Simpan draf kapan saja." className="mx-auto max-w-3xl" />
+              <PageHeader title={type === 'weight' ? 'Pasang Jastip Bagasi' : 'Pasang Jastip Belanja'} description="Simpan draf kapan saja." className="mx-auto max-w-3xl" />
               <ListingWizard key={type} mode="create" initial={emptyForm(type)} userId={user.id} onBackToType={() => setParams({})} />
             </>
           )}
@@ -38,7 +38,7 @@ function TypeChooser({ onPick }: { onPick: (t: ListingType) => void }) {
     {
       type: 'weight',
       icon: <Plane />,
-      title: 'Jastip Diaspora',
+      title: 'Jastip Bagasi',
       text: 'Tawarkan sisa bagasi. Bayar per kg.',
       points: ['Atur total kg & biaya/kg', 'Cocok untuk traveler'],
       tone: 'bg-navy text-white',
@@ -46,7 +46,7 @@ function TypeChooser({ onPick }: { onPick: (t: ListingType) => void }) {
     {
       type: 'shopping',
       icon: <ShoppingBag />,
-      title: 'Jastip Shopping',
+      title: 'Jastip Belanja',
       text: 'Buka PO produk dari kotamu.',
       points: ['Katalog banyak produk dengan stok', 'Stok direservasi saat pesanan diterima'],
       tone: 'bg-teal-500 text-deep',
