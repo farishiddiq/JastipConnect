@@ -10,7 +10,6 @@ import { Avatar, PageHeader, VerificationLabel } from '@/components/shared/displ
 import { useAuth } from '@/components/shared/AccountSwitcher';
 import { useConfirm } from '@/components/shared/ConfirmProvider';
 import { RequireUser } from '@/components/layout/Guards';
-import { ThemeControl } from '@/components/shared/ThemeControl';
 import { useDB, usePageMeta } from '@/hooks/useStore';
 import { switchAccount, updateProfile, validateProfile } from '@/services/userService';
 import { store, storageAvailable } from '@/services/store';
@@ -162,11 +161,6 @@ function DemoSettings() {
 
   return (
     <>
-    <Card className="mt-6 p-5 sm:p-6">
-      <h2 className="text-lg font-bold text-navy">Tampilan</h2>
-      <p className="mt-1 text-sm text-slate-500">Otomatis mengikuti perangkat.</p>
-      <ThemeControl className="mt-4" />
-    </Card>
     <Card className="mt-6 p-5 sm:p-6">
       <h2 className="flex items-center gap-2 text-lg font-bold text-navy">
         <Database className="h-5 w-5 text-teal-600" /> Data demo

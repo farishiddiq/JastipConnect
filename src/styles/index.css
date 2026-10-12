@@ -89,6 +89,13 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .chip-pop {
+    animation: chip-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: calc(0.15s + var(--i, 0) * 0.14s);
+  }
+  .bubble-float {
+    animation: bubble-float 5s ease-in-out infinite;
+  }
   .rise {
     animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--i, 0) * 60ms);
@@ -131,4 +138,140 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+/* Phones: small text is bumped one step so nothing reads too small. */
+@media (max-width: 639px) {
+  .text-xs {
+    font-size: 0.8125rem;
+    line-height: 1.15rem;
+  }
+  .text-\[11px\],
+  .text-\[12px\] {
+    font-size: 0.8125rem;
+  }
+  .text-\[13px\] {
+    font-size: 0.875rem;
+  }
+}
+
+@keyframes chip-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.6) rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(var(--r, 0deg));
+  }
+}
+@keyframes bubble-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.chip-pop {
+  transform: rotate(var(--r, 0deg));
+}
+
+/* Landing animations: transform and opacity only, so they run on the compositor at 60fps. */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+  transition-delay: calc(var(--i, 0) * 70ms);
+  will-change: transform, opacity;
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+.cta-ring,
+.float-a,
+.float-b,
+.bar-grow {
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cta-ring {
+    animation: cta-ring 2.6s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+  }
+  .float-a {
+    animation: float-a 7s ease-in-out infinite;
+  }
+  .float-b {
+    animation: float-b 6s ease-in-out -2s infinite;
+  }
+  .bar-grow {
+    transform-origin: left center;
+    animation: bar-grow 1.4s cubic-bezier(0.32, 0.72, 0, 1) 0.5s both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .cta-ring {
+    display: none;
+  }
+}
+@keyframes cta-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  70%,
+  100% {
+    transform: scale(1.16, 1.4);
+    opacity: 0;
+  }
+}
+@keyframes float-a {
+  0%,
+  100% {
+    transform: rotate(-3deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-3deg) translateY(-8px);
+  }
+}
+@keyframes float-b {
+  0%,
+  100% {
+    transform: rotate(4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(4deg) translateY(-10px);
+  }
+}
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Boarding-pass card: round notches cut into both edges where the stub is torn off. */
+.ticket-wrap {
+  filter: drop-shadow(0 1px 1px rgb(18 35 63 / 0.05)) drop-shadow(0 10px 14px rgb(18 35 63 / 0.1));
+}
+.ticket {
+  --cut: 6rem;
+  -webkit-mask:
+    radial-gradient(circle 9px at 0 calc(100% - var(--cut)), #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 9px at 100% calc(100% - var(--cut)), #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 9px at 0 calc(100% - var(--cut)), #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 9px at 100% calc(100% - var(--cut)), #0000 97%, #000) right / 51% 100% no-repeat;
 }

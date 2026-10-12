@@ -36,12 +36,13 @@ import { ReportButton } from '@/components/shared/ReportDialog';
 import { useAuth } from '@/components/shared/AccountSwitcher';
 import { useConfirm } from '@/components/shared/ConfirmProvider';
 import { AvailabilityMeter, PriceLabel, SaveButton } from '@/components/listings/ListingCard';
+import { LuggageMeter } from '@/components/listings/LuggageMeter';
 import { QuantityStepper, selectionTotals, ShoppingOrderDialog, WeightInquiryDialog } from '@/components/forms/InquiryForms';
 import { PromotePanel } from '@/components/listings/PromotePanel';
 import { useCompletedCount, useCurrentUser, useDB, useListingView, usePageMeta, useProviderRating, type ListingView } from '@/hooks/useStore';
 import { closeListing, recordView, reopenListing } from '@/services/listingService';
 import { productAvailability } from '@/lib/availability';
-import { formatCountdown, formatDate, formatKg, formatMoney, formatMoneyGroups, formatMonthYear } from '@/lib/format';
+import { formatCountdown, formatDate, formatMoney, formatMoneyGroups, formatMonthYear, listingTitle } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const BLOCK_REASON: Record<string, string> = {
@@ -146,7 +147,7 @@ function ListingDetail({ view }: { view: ListingView }) {
               <ListingStatusBadge status={status} type={l.type} />
               {l.closedByAdmin && <Badge tone="red">Ditutup moderator</Badge>}
             </p>
-            <h1 className="text-2xl font-bold leading-[1.15] text-navy sm:text-4xl">{l.title}</h1>
+            <h1 className="text-2xl font-bold leading-[1.15] text-navy sm:text-4xl">{listingTitle(l)}</h1>
             <RouteDisplay listing={l} size="md" className="text-slate-600" />
           </header>
 
@@ -260,7 +261,7 @@ function ListingDetail({ view }: { view: ListingView }) {
       {!isOwner && (
         <>
           <div className="h-20 lg:hidden" aria-hidden />
-          <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] glass z-30 border-t border-border/70 px-4 py-3 md:bottom-0 lg:hidden">
+          <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] glass z-30 border-t border-border/70 px-4 py-3 md:bottom-0 lg:hidden">
             <MobileCta view={view} selection={selection} canInquire={canInquire} onStart={startInquiry} />
           </div>
         </>
@@ -317,15 +318,8 @@ function WeightCapacity({ view }: { view: ListingView }) {
       <h2 id="cap-title" className="text-xl font-semibold text-navy">
         Kuota bagasi
       </h2>
-      <p className="num mt-2 text-3xl font-bold text-navy sm:mt-3 sm:text-4xl">
-        {formatKg(a.remaining)} <span className="text-lg font-medium text-slate-500">tersisa</span>
-      </p>
-      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
-        <div className="h-full rounded-full bg-teal-500 transition-[width] duration-500 ease-spring" style={{ width: `${Math.min(100, a.ratio * 100)}%` }} />
-      </div>
-      <p className="num mt-2 text-sm text-slate-500">
-        {formatKg(a.reserved)} diterima dari {formatKg(l.capacityKg)} · {formatMoney(l.pricePerKg, l.currency)}/kg
-      </p>
+      <LuggageMeter className="mt-4 rounded-3xl bg-white p-4 shadow-card sm:p-5" total={l.capacityKg} reserved={a.reserved} />
+      <p className="num mt-3 text-sm text-slate-600">{formatMoney(l.pricePerKg, l.currency)}/kg</p>
     </section>
   );
 }

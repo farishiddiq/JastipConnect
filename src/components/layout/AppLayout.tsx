@@ -34,8 +34,6 @@ import { dismissDemoBanner, markNotificationRead, markNotificationsRead, switchA
 import { formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Logo } from './Logo';
-import { THEME_OPTIONS, useThemePreference } from '@/components/shared/ThemeControl';
-import { setTheme } from '@/services/userService';
 
 export function AppLayout() {
   const location = useLocation();
@@ -61,7 +59,7 @@ export function AppLayout() {
         className={cn(
           'flex-1',
           isInbox && 'min-h-0 overflow-hidden',
-          isInbox && !inThread && 'pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0',
+          isInbox && !inThread && 'pb-[calc(68px+env(safe-area-inset-bottom))] md:pb-0',
         )}
       >
         <Outlet />
@@ -249,9 +247,6 @@ function NotificationBell() {
 
 function UserMenu() {
   const user = useCurrentUser();
-  const theme = useThemePreference();
-  const nextTheme = THEME_OPTIONS[(THEME_OPTIONS.findIndex((t) => t.value === theme) + 1) % THEME_OPTIONS.length]!;
-  const ThemeIcon = THEME_OPTIONS.find((t) => t.value === theme)!.icon;
   const { openSwitcher } = useAuth();
   const navigate = useNavigate();
 
@@ -298,14 +293,6 @@ function UserMenu() {
             <ShieldCheck /> Panel Moderasi
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault();
-            setTheme(nextTheme.value);
-          }}
-        >
-          <ThemeIcon /> Tampilan: {THEME_OPTIONS.find((t) => t.value === theme)!.label}
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => openSwitcher()}>
           <Users /> Ganti akun demo
@@ -329,46 +316,38 @@ function BottomNav() {
   const items = [
     { to: '/', label: 'Beranda', icon: Home, end: true },
     { to: '/explore', label: 'Jelajahi', icon: Compass },
-    { to: '/post', label: 'Pasang', icon: PlusCircle, primary: true },
+    { to: '/post', label: 'Pasang', icon: PlusCircle, },
     { to: '/inbox', label: 'Inbox', icon: MessageCircle, badge: unread },
     { to: '/profile', label: 'Akun', icon: UserIcon },
   ];
   return (
     <nav
       aria-label="Navigasi bawah"
-      className="glass fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 bg-white/95 backdrop-blur-xl z-40 rounded-t-3xl border-t border-border/70 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-16px_rgb(0_0_0/0.18)] md:hidden"
     >
-      <ul className="grid h-16 grid-cols-5">
+      <ul className="grid h-[68px] grid-cols-5">
         {items.map((it) => (
           <li key={it.to}>
             <NavLink
               to={it.to}
               end={it.end}
-              className={({ isActive }) =>
-                cn(
-                  'flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500',
-                  isActive ? 'text-teal-600' : 'text-slate-500',
-                )
-              }
+              aria-label={it.to === '/profile' && !user ? 'Masuk' : it.label}
+              className="flex h-full items-center justify-center focus-visible:outline-none"
             >
               {({ isActive }) => (
-                <>
-                  {it.primary ? (
-                    <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500 text-deep shadow-lift ring-4 ring-white">
-                      <it.icon className="h-6 w-6" aria-hidden />
-                    </span>
-                  ) : (
-                    <span className="relative">
-                      <it.icon className={cn('h-6 w-6', isActive && 'stroke-[2.4]')} aria-hidden />
-                      {!!it.badge && (
-                        <span className="absolute -right-2 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-teal-700 px-1 text-[10px] font-bold text-white num">
-                          {it.badge}
-                        </span>
-                      )}
+                <span
+                  className={cn(
+                    'relative flex h-12 w-16 items-center justify-center rounded-full transition duration-200 ease-spring active:scale-95',
+                    isActive ? 'bg-teal-50 text-teal-700' : 'text-slate-500',
+                  )}
+                >
+                  <it.icon className={cn('h-6 w-6', isActive && 'stroke-[2.2]')} aria-hidden />
+                  {!!it.badge && (
+                    <span className="absolute right-3 top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-teal-700 px-1 text-[10px] font-bold text-white num">
+                      {it.badge}
                     </span>
                   )}
-                  <span>{it.to === '/profile' && !user ? 'Masuk' : it.label}</span>
-                </>
+                </span>
               )}
             </NavLink>
           </li>

@@ -71,14 +71,22 @@ export function formatNumber(n: number): string {
   return new Intl.NumberFormat(LOCALE).format(n);
 }
 
-/** Card title without the route: the destination is already shown right below the title. */
+/** Title without the route or dashes: origin and destination are already shown right below the title. */
 export function listingTitle(l: { title: string; origin: { city: string }; destination: { city: string } }): string {
-  const route = `${l.origin.city} → ${l.destination.city}`;
-  const i = l.title.toLowerCase().indexOf(route.toLowerCase());
-  if (i < 0) return l.title;
-  let after = l.title.slice(i + route.length).trimStart();
-  if (after.startsWith(',')) after = after.slice(1).trimStart();
-  const t = `${l.title.slice(0, i).trimEnd()} ${after}`.trim();
+  const o = l.origin.city;
+  const d = l.destination.city;
+  let t = l.title;
+  for (const ch of [String.fromCharCode(8212), String.fromCharCode(8211)]) t = t.split(ch).join(' ');
+  const cut = (needle: string) => {
+    const i = t.toLowerCase().indexOf(needle.toLowerCase());
+    if (i < 0) return;
+    let rest = t.slice(i + needle.length).trimStart();
+    if (rest.startsWith(',')) rest = rest.slice(1);
+    t = `${t.slice(0, i).trimEnd()} ${rest.trimStart()}`;
+  };
+  [`balik ke ${d} dari ${o}`, `${o} → ${d}`, `ke ${d} dari ${o}`, `dari ${o} ke ${d}`, `${o} ke ${d}`].forEach(cut);
+  while (t.includes('  ')) t = t.split('  ').join(' ');
+  t = t.trim();
   if (!t) return l.title;
   return t.charAt(0).toUpperCase() + t.slice(1);
 }

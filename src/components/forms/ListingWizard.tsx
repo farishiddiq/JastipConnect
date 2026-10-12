@@ -166,7 +166,7 @@ export function ListingWizard({ mode, initial, userId, listing, ctx, onBackToTyp
         {step === 3 && <PreviewStep form={form} set={set} errors={errors} />}
       </Card>
 
-      <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 -mx-4 mt-4 flex flex-wrap items-center gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:px-0">
+      <div className="sticky bottom-[calc(68px+env(safe-area-inset-bottom))] z-20 -mx-4 mt-4 flex flex-wrap items-center gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:px-0">
         <Button variant="ghost" onClick={step === 0 && !onBackToType ? cancel : goBack}>
           <ArrowLeft /> {step === 0 ? (onBackToType ? 'Ganti jenis' : 'Batal') : 'Kembali'}
         </Button>

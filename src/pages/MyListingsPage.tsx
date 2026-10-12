@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarDays, Eye, Inbox, LayoutList, MoreHorizontal, Pencil, PlusCircle, Repeat, Trash2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Tabs } from '@/components/ui/misc';
+import { Badge, Tabs } from '@/components/ui/misc';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EmptyState, ListingCover, ListingStatusBadge, PageHeader, RouteDisplay, TypeBadge } from '@/components/shared/display';
 import { useConfirm } from '@/components/shared/ConfirmProvider';
@@ -12,7 +12,7 @@ import { AvailabilityMeter } from '@/components/listings/ListingCard';
 import { PromotePanel } from '@/components/listings/PromotePanel';
 import { useDB, useListingViews, usePageMeta, type ListingView } from '@/hooks/useStore';
 import { closeListing, deleteDraft, reopenListing } from '@/services/listingService';
-import { formatDate, formatKg } from '@/lib/format';
+import { formatDate, formatKg, listingTitle } from '@/lib/format';
 import type { User } from '@/types';
 
 type Tab = 'active' | 'full' | 'closed' | 'draft';
@@ -123,11 +123,11 @@ function MyListingRow({ view, userId }: { view: ListingView; userId: string }) {
         <div className="flex flex-wrap items-center gap-2">
           <TypeBadge type={l.type} />
           <ListingStatusBadge status={status} type={l.type} />
-          {pending > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">{pending} menunggu</span>}
+          {pending > 0 && <Badge tone="amber">{pending} menunggu</Badge>}
         </div>
         <h2 className="font-bold leading-snug text-navy">
           <Link to={`/listings/${l.id}`} className="hover:text-teal-700">
-            {l.title}
+            {listingTitle(l)}
           </Link>
         </h2>
         <RouteDisplay listing={l} size="sm" className="text-slate-600" />

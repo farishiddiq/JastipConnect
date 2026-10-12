@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, Clock } from 'lucide-react';
+import { Bookmark, Clock, Plane } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ListingView } from '@/hooks/useStore';
 import { useSavedIds } from '@/hooks/useStore';
@@ -7,7 +7,9 @@ import { ListingCover, ListingStatusBadge } from '@/components/shared/display';
 import { useAuth } from '@/components/shared/AccountSwitcher';
 import { toggleSaved } from '@/services/userService';
 import { formatDateShort, formatKg, formatMoney, listingTitle } from '@/lib/format';
+import { cityCode } from '@/data/locations';
 import { referencePrice } from '@/lib/availability';
+import { Reveal } from '@/components/shared/Reveal';
 import { cn } from '@/lib/utils';
 
 export function SaveButton({ listingId, className, withLabel }: { listingId: string; className?: string; withLabel?: boolean }) {
@@ -81,39 +83,52 @@ export function PriceLabel({ view, className }: { view: ListingView; className?:
 export function ListingCard({ view, showViews, compact }: { view: ListingView; showViews?: boolean; compact?: boolean }) {
   const { listing: l, status } = view;
   const muted = status !== 'open';
+  const from = cityCode(l.origin.city);
+  const to = cityCode(l.destination.city);
   return (
     <article
       className={cn(
-        'group relative flex h-full flex-col bg-white shadow-card transition duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-lift has-[a:active]:scale-[0.985] focus-within:ring-2 focus-within:ring-teal-500',
-        compact ? 'rounded-2xl p-2' : 'rounded-3xl p-3',
+        'ticket-wrap group relative h-full transition-transform duration-200 ease-spring hover:-translate-y-0.5 has-[a:active]:scale-[0.985]',
         muted && 'opacity-70 saturate-50 hover:opacity-100 hover:saturate-100',
       )}
     >
-      <div className={cn('relative overflow-hidden', compact ? 'aspect-[4/3] rounded-xl' : 'aspect-square rounded-2xl')}>
-        <ListingCover listing={l} />
-        <span className={cn('num absolute inline-flex items-center rounded-full bg-white font-medium text-teal-700 shadow-sm', compact ? 'left-2 top-2 gap-1 px-2 py-1 text-xs' : 'left-3 top-3 gap-1.5 px-3 py-1.5 text-[13px]')}>
-          <Clock className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
-          {formatDateShort(l.departureDate)}
-        </span>
-        <SaveButton listingId={l.id} className={cn('absolute z-10 !bg-white', compact ? 'right-2 top-2 !h-8 !w-8' : 'right-3 top-3 !h-9 !w-9')} />
-        {muted && (
-          <div className={compact ? 'absolute bottom-2 left-2' : 'absolute bottom-3 left-3'}>
-            <ListingStatusBadge status={status} type={l.type} />
+      <div className={cn('ticket flex h-full flex-col bg-white', compact ? 'rounded-2xl p-1.5 [--cut:5.875rem] sm:p-2 sm:[--cut:6rem]' : 'rounded-3xl p-3 [--cut:6.75rem]')}>
+        <div className={cn('relative overflow-hidden', compact ? 'aspect-[3/2] rounded-xl' : 'aspect-[4/3] rounded-2xl')}>
+          <ListingCover listing={l} />
+          <span className={cn('num absolute inline-flex items-center rounded-full bg-white font-medium text-teal-700 shadow-sm', compact ? 'left-2 top-2 gap-1 px-2 py-1 text-xs' : 'left-3 top-3 gap-1.5 px-3 py-1.5 text-[13px]')}>
+            <Clock className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
+            {formatDateShort(l.departureDate)}
+          </span>
+          <SaveButton listingId={l.id} className={cn('absolute z-10 !bg-white', compact ? 'right-2 top-2 !h-8 !w-8' : 'right-3 top-3 !h-9 !w-9')} />
+          {muted && (
+            <div className={compact ? 'absolute bottom-2 left-2' : 'absolute bottom-3 left-3'}>
+              <ListingStatusBadge status={status} type={l.type} />
+            </div>
+          )}
+        </div>
+        <div className={cn('flex-1', compact ? 'px-1 pb-3 pt-2.5' : 'px-1 pb-4 pt-3.5')}>
+          <h3 className={cn('line-clamp-1 font-semibold text-navy', compact ? 'text-sm' : 'text-base')}>
+            <Link to={`/listings/${l.id}`} className="after:absolute after:inset-0 focus-visible:outline-none">
+              {listingTitle(l)}
+            </Link>
+          </h3>
+          {showViews && <p className="mt-0.5 text-xs text-slate-500">{l.viewCount} dilihat</p>}
+        </div>
+        <div
+          className={cn('ticket-stub mx-2 flex flex-col justify-center gap-1 border-t-2 border-dashed border-slate-300', compact ? 'h-[5.5rem]' : 'h-[6rem]')}
+          title={`${l.origin.city} → ${l.destination.city}`}
+        >
+          <div className="flex items-center gap-2 text-navy" aria-label={`${l.origin.city} ke ${l.destination.city}`}>
+            <span className={cn('font-bold tracking-wide', compact ? 'text-lg' : 'text-xl')}>{from}</span>
+            <span className="relative flex h-4 flex-1 items-center" aria-hidden>
+              <span className="w-full border-t border-dashed border-slate-300" />
+              <Plane className="absolute left-1/2 h-4 w-4 -translate-x-1/2 bg-white px-0.5 text-teal-600" />
+            </span>
+            <span className={cn('font-bold tracking-wide', compact ? 'text-lg' : 'text-xl')}>{to}</span>
           </div>
-        )}
-      </div>
-      <div className={compact ? 'px-1 pb-0.5 pt-2.5' : 'px-1 pb-1 pt-3.5'}>
-        <h3 className={cn('line-clamp-1 font-semibold text-navy', compact ? 'text-sm' : 'text-base')}>
-          <Link to={`/listings/${l.id}`} className="after:absolute after:inset-0 focus-visible:outline-none">
-            {listingTitle(l)}
-          </Link>
-        </h3>
-        <p className={cn('mt-0.5 truncate text-slate-500', compact ? 'text-xs' : 'text-[13px]')}>
-          {l.origin.city} → {l.destination.city}
-          {showViews && ` · ${l.viewCount} dilihat`}
-        </p>
-        <div className={cn('flex items-baseline justify-between gap-2', compact ? 'mt-2' : 'mt-3')}>
-          <span className={cn('text-navy', compact ? 'text-xs' : 'text-sm')}>Harga</span>
+          <div className="flex items-baseline justify-between gap-2">
+            <span className={cn('truncate text-slate-500', compact ? 'text-[11px]' : 'text-xs')}>{l.origin.city} → {l.destination.city}</span>
+          </div>
           <PriceLabel view={view} className={cn('!text-teal-700 [&_.num]:font-bold', compact ? 'text-xs [&_.num]:text-sm [&_span]:text-xs' : '[&_.num]:text-base')} />
         </div>
       </div>
@@ -123,12 +138,12 @@ export function ListingCard({ view, showViews, compact }: { view: ListingView; s
 
 export function ListingGrid({ views, className, compact, mobileLimit }: { views: ListingView[]; className?: string; compact?: boolean; mobileLimit?: number }) {
   return (
-    <ul className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', compact && '!grid-cols-2 !gap-3 md:!grid-cols-3 lg:!grid-cols-4', className)}>
+    <ul className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', compact && '!grid-cols-2 !gap-3 md:!grid-cols-4 lg:!grid-cols-5', className)}>
       {views.map((v, i) => (
         <li key={v.listing.id} className={cn('flex', mobileLimit !== undefined && i >= mobileLimit && 'max-sm:hidden')}>
-          <div className="w-full">
+          <Reveal className="w-full" i={i % 5}>
             <ListingCard view={v} compact={compact} />
-          </div>
+          </Reveal>
         </li>
       ))}
     </ul>

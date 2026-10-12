@@ -9,18 +9,18 @@ import plugin from 'tailwindcss/plugin';
  */
 const PALETTE = {
   white: ['#FFFFFF', '#111D30'],
-  background: ['#F7F7F7', '#0A1424'],
-  border: ['#E6E6E6', '#22324B'],
+  background: ['#F8FAFC', '#0A1424'],
+  border: ['#E3E8EF', '#22324B'],
   shadow: ['#12233F', '#000000'],
   slate: {
-    50: ['#F7F7F7', '#0E1828'], 100: ['#EDEDED', '#152238'], 200: ['#E1E3E6', '#1F2E47'], 300: ['#CDD0D5', '#2F405C'],
-    400: ['#6B7078', '#7A8BA5'], 500: ['#5C6168', '#9AA9BF'], 600: ['#464A51', '#B5C1D2'], 700: ['#33363B', '#CDD6E2'],
-    800: ['#222428', '#E2E8F0'], 900: ['#121316', '#F1F5F9'],
+    50: ['#F8FAFC', '#0E1828'], 100: ['#EEF2F7', '#152238'], 200: ['#E3E8EF', '#1F2E47'], 300: ['#CBD3DF', '#2F405C'],
+    400: ['#66758B', '#7A8BA5'], 500: ['#5A687C', '#9AA9BF'], 600: ['#44505F', '#B5C1D2'], 700: ['#2F3A4B', '#CDD6E2'],
+    800: ['#1C2A40', '#E2E8F0'], 900: ['#12233F', '#F1F5F9'],
   },
   navy: {
     50: ['#EEF2F8', '#14233A'], 100: ['#D9E1EE', '#1B2D4A'], 200: ['#B0C0DA', '#2A4166'], 300: ['#7F96BD', '#4D6690'],
     400: ['#4F6A98', '#7E95BC'], 500: ['#2F4A76', '#A6B8D6'], 600: ['#1F365C', '#C4D1E6'], 700: ['#12233F', '#E6ECF5'],
-    800: ['#0C1830', '#F1F5FA'], 900: ['#070F1F', '#FAFCFE'],
+    800: ['#0C1830', '#F1F5FA'], 900: ['#070F1F', '#FAFCFE'], 950: ['#070F1F', '#FAFCFE'],
   },
   teal: {
     50: ['#E8FAF7', '#0D2A2D'], 100: ['#C8F2EC', '#113936'], 200: ['#93E5DA', '#165049'], 300: ['#58D3C3', '#1E7A6F'],
@@ -48,6 +48,11 @@ const PALETTE = {
     800: ['#075985', '#BBE3F7'], 900: ['#0C4A6E', '#DDF1FB'],
   },
 };
+
+// Three-colour theme: warning and info hues fold into navy, success into turquoise. Red stays for errors.
+PALETTE.amber = PALETTE.navy;
+PALETTE.sky = PALETTE.navy;
+PALETTE.emerald = PALETTE.teal;
 
 const channels = (hex) => {
   const n = parseInt(hex.slice(1), 16);
@@ -84,7 +89,7 @@ export default {
       colors: {
         ...colors,
         // Fixed (non-theming) tones for content over photography.
-        deep: '#0A1628',
+        deep: '#12233F',
         snow: '#FFFFFF',
         mint: '#93E5DA',
       },
@@ -99,12 +104,7 @@ export default {
   plugins: [
     animate,
     plugin(({ addBase }) => {
-      const dark = { ...buildVars(1), colorScheme: 'dark' };
-      addBase({
-        ':root': { ...buildVars(0), colorScheme: 'light' },
-        '@media (prefers-color-scheme: dark)': { ':root:not([data-theme="light"])': dark },
-        ':root[data-theme="dark"]': dark,
-      });
+      addBase({ ':root': { ...buildVars(0), colorScheme: 'light' } });
     }),
   ],
 };
