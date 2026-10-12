@@ -1,0 +1,11 @@
+{
+  "name": "JastipConnect",
+  "short_name": "JastipConnect",
+  "description": "Titip barang, temukan perjalanan, terhubung dengan diaspora.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#12233F",
+  "lang": "id",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
