@@ -42,7 +42,7 @@ import { PromotePanel } from '@/components/listings/PromotePanel';
 import { useCompletedCount, useCurrentUser, useDB, useListingView, usePageMeta, useProviderRating, type ListingView } from '@/hooks/useStore';
 import { closeListing, recordView, reopenListing } from '@/services/listingService';
 import { productAvailability } from '@/lib/availability';
-import { formatCountdown, formatDate, formatMoney, formatMoneyGroups, formatMonthYear, listingTitle } from '@/lib/format';
+import { formatCountdown, formatDate, formatMoney, formatMoneyGroups, formatMonthYear, formatProductPrice, listingTitle } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const BLOCK_REASON: Record<string, string> = {
@@ -59,7 +59,7 @@ export function ListingDetailPage() {
 
   usePageMeta(
     view ? view.listing.title : 'Listing tidak ditemukan',
-    view ? `${view.listing.origin.city} → ${view.listing.destination.city}, berangkat ${formatDate(view.listing.departureDate)}. ${view.listing.description.slice(0, 120)}` : undefined,
+    view ? `${view.listing.origin.city} → ${view.listing.destination.city}${view.listing.departureDate ? `, berangkat ${formatDate(view.listing.departureDate)}` : ''}. ${view.listing.description.slice(0, 120)}` : undefined,
   );
 
   React.useEffect(() => {
@@ -152,14 +152,16 @@ function ListingDetail({ view }: { view: ListingView }) {
           </header>
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border py-4 sm:grid-cols-3 sm:py-5">
-            <Fact label="Berangkat" value={formatDate(l.departureDate)} sub={formatCountdown(l.departureDate)} />
-            {l.returnDate && <Fact label="Kembali" value={formatDate(l.returnDate)} />}
-            <Fact
-              label={l.type === 'weight' ? 'Batas titip' : 'Batas pesan'}
-              value={formatDate(l.orderDeadline)}
-              sub={formatCountdown(l.orderDeadline)}
-              highlight={status === 'open'}
-            />
+            {l.departureDate && <Fact label="Berangkat" value={formatDate(l.departureDate)} sub={formatCountdown(l.departureDate)} />}
+            {l.type === 'shopping' && l.arrivalDate && <Fact label="Tiba" value={formatDate(l.arrivalDate)} sub={formatCountdown(l.arrivalDate)} />}
+            {l.orderDeadline && (
+              <Fact
+                label={l.type === 'weight' ? 'Batas titip' : 'Batas pesan'}
+                value={formatDate(l.orderDeadline)}
+                sub={formatCountdown(l.orderDeadline)}
+                highlight={status === 'open'}
+              />
+            )}
           </dl>
 
           {l.type === 'weight' ? (
@@ -186,9 +188,17 @@ function ListingDetail({ view }: { view: ListingView }) {
                           {p.variant && ` · ${p.variant}`}
                         </p>
                         {p.description && <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{p.description}</p>}
+                        {p.videoUrl && <video src={p.videoUrl} controls playsInline preload="metadata" className="mt-2 max-h-40 w-full rounded-xl bg-slate-100" />}
+                        {p.lastOrderDate && <p className="mt-1 text-xs text-slate-600">Batas pesan {formatDate(p.lastOrderDate)}</p>}
+                        {p.terms && (
+                          <details className="mt-1 text-xs text-slate-600">
+                            <summary className="cursor-pointer font-semibold text-navy">S&K produk</summary>
+                            <p className="mt-1 whitespace-pre-line">{p.terms}</p>
+                          </details>
+                        )}
                         <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-2">
                           <div>
-                            <p className="font-extrabold text-navy">{formatMoney(p.unitPrice, p.currency)}</p>
+                            <p className="font-extrabold text-navy">{formatProductPrice(p, l.currency)}</p>
                             <p className={cn('text-xs font-semibold', sold ? 'text-red-600' : rem <= 3 ? 'text-amber-600' : 'text-slate-500')}>
                               {sold ? 'Sold Out' : `Sisa ${rem}`}
                             </p>
@@ -219,7 +229,7 @@ function ListingDetail({ view }: { view: ListingView }) {
               {l.type === 'weight' && l.permittedItemsNote && <InfoBlock title="Diterima">{l.permittedItemsNote}</InfoBlock>}
               {l.prohibitedItemsNote && <InfoBlock title="Tidak diterima">{l.prohibitedItemsNote}</InfoBlock>}
               {l.handoverMethod && <InfoBlock title="Serah terima">{l.handoverMethod}</InfoBlock>}
-              <InfoBlock title="Syarat">{l.terms || '-'}</InfoBlock>
+              {(l.type === 'weight' || l.terms) && <InfoBlock title={l.type === 'weight' ? 'Syarat' : 'Syarat dan ketentuan'}>{l.terms || '-'}</InfoBlock>}
             </div>
           </section>
 
@@ -361,7 +371,7 @@ function BuyerCta({
       {canInquire ? (
         l.type === 'weight' ? (
           <Button variant="accent" size="lg" className="w-full" onClick={onStart}>
-            <MessageCircle /> Tanya Provider
+            <MessageCircle /> Ajukan Titipan
           </Button>
         ) : (
           <>
@@ -374,14 +384,14 @@ function BuyerCta({
               <p className="text-[13px] font-medium text-slate-700">Pilih produk di katalog.</p>
             )}
             <Button variant="accent" size="lg" className="w-full" onClick={onStart} disabled={count === 0}>
-              <ShoppingBag /> Ajukan Pesanan
+              <ShoppingBag /> Tanya / Pesan
             </Button>
           </>
         )
       ) : (
         <>
           <Button size="lg" className="w-full" disabled>
-            <Lock /> {l.type === 'weight' ? 'Tanya Provider' : 'Ajukan Pesanan'}
+            <Lock /> {l.type === 'weight' ? 'Ajukan Titipan' : 'Tanya / Pesan'}
           </Button>
           <p className="text-[13px] text-slate-500">{BLOCK_REASON[view.status]}</p>
         </>
@@ -410,13 +420,13 @@ function MobileCta({ view, selection, canInquire, onStart }: { view: ListingView
         <Button variant="accent" onClick={onStart} disabled={l.type === 'shopping' && count === 0}>
           {l.type === 'weight' ? (
             <>
-              <MessageCircle /> Tanya Provider
+              <MessageCircle /> Ajukan Titipan
             </>
           ) : count === 0 ? (
             'Pilih produk'
           ) : (
             <>
-              <ShoppingBag /> Ajukan Pesanan
+              <ShoppingBag /> Tanya / Pesan
             </>
           )}
         </Button>

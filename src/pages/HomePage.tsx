@@ -8,9 +8,10 @@ import { useDB, useListingViews, usePageMeta } from '@/hooks/useStore';
 import { POPULAR_ROUTES, cityCode } from '@/data/locations';
 import { TYPE_IMAGES } from '@/data/images';
 import { Reveal } from '@/components/shared/Reveal';
+import { compareListingDates } from '@/lib/listingDates';
 import { cn } from '@/lib/utils';
 
-type Direction = 'SA-ID' | 'ID-SA' | '';
+type Direction = 'SA-ID' | 'ID-SA' | 'AU-ID' | 'ID-AU' | '';
 
 const HOW_STEPS = [
   { emoji: '🔍', title: 'Cari', text: 'Pilih rute atau produk.' },
@@ -23,7 +24,7 @@ export function HomePage() {
   usePageMeta(undefined, 'Jastip diaspora dan personal shopper Saudi ↔ Indonesia.');
   const views = useListingViews();
   const open = views.filter((v) => v.status === 'open');
-  const soonest = [...open].sort((a, b) => a.listing.departureDate.localeCompare(b.listing.departureDate)).slice(0, 5);
+  const soonest = [...open].sort((a, b) => compareListingDates(a.listing, b.listing)).slice(0, 5);
   const newest = [...open]
     .filter((v) => !soonest.includes(v))
     .sort((a, b) => (b.listing.publishedAt ?? '').localeCompare(a.listing.publishedAt ?? ''))
@@ -202,6 +203,8 @@ const SUGGESTIONS = ['Kurma', 'Cokelat', 'Batik', 'Abaya', 'Riyadh', 'Bagasi 20 
 const DIRECTIONS: [Direction, string][] = [
   ['SA-ID', 'Saudi → Indonesia'],
   ['ID-SA', 'Indonesia → Saudi'],
+  ['AU-ID', 'Australia → Indonesia'],
+  ['ID-AU', 'Indonesia → Australia'],
   ['', 'Semua arah'],
 ];
 const TYPES: ['' | 'weight' | 'shopping', string, string][] = [

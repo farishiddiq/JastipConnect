@@ -137,7 +137,6 @@ export function ProviderProfilePage() {
                             </div>
                             <StarRating value={r.rating} size={14} />
                           </div>
-                          <p className="mt-3 text-sm leading-relaxed text-slate-600">{r.comment}</p>
                         </Card>
                       </li>
                     );

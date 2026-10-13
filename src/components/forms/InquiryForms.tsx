@@ -8,7 +8,7 @@ import { Field, Input, Textarea } from '@/components/ui/form';
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ProductThumb } from '@/components/shared/display';
 import { createShoppingInquiry, createWeightInquiry } from '@/services/inquiryService';
-import { formatKg, formatMoney, formatMoneyGroups } from '@/lib/format';
+import { formatKg, formatMoney, formatMoneyGroups, formatProductPrice } from '@/lib/format';
 import { round2 } from '@/lib/availability';
 import { cn } from '@/lib/utils';
 
@@ -66,7 +66,7 @@ export function WeightInquiryDialog({
       <DialogContent>
         <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
-            <DialogTitle>Tanya Provider</DialogTitle>
+            <DialogTitle>Ajukan Titipan</DialogTitle>
             <DialogDescription>
               Ajukan titipan untuk {listing.origin.city} → {listing.destination.city}. Sisa kuota {formatKg(remaining)}.
             </DialogDescription>
@@ -152,14 +152,19 @@ export function QuantityStepper({
 export function selectionTotals(listing: ShoppingListing, selection: Record<string, number>) {
   const totals: Partial<Record<Currency, number>> = {};
   let count = 0;
+  let unpriced = 0;
   for (const p of listing.products) {
     const q = selection[p.id] ?? 0;
-    if (q > 0) {
-      totals[p.currency] = round2((totals[p.currency] ?? 0) + q * p.unitPrice);
-      count += q;
+    if (q <= 0) continue;
+    count += q;
+    if (typeof p.unitPrice === 'number' && p.unitPrice > 0) {
+      const cur = p.currency ?? listing.currency;
+      totals[cur] = round2((totals[cur] ?? 0) + q * p.unitPrice);
+    } else {
+      unpriced += 1;
     }
   }
-  return { totals, count };
+  return { totals, count, unpriced };
 }
 
 export function ShoppingOrderDialog({
@@ -189,7 +194,7 @@ export function ShoppingOrderDialog({
     }
   }, [open]);
 
-  const { totals, count } = selectionTotals(listing, selection);
+  const { totals, count, unpriced } = selectionTotals(listing, selection);
   const available = listing.products.filter((p) => (remainingById[p.id] ?? 0) > 0 || (selection[p.id] ?? 0) > 0);
 
   const submit = (e: React.FormEvent) => {
@@ -209,7 +214,7 @@ export function ShoppingOrderDialog({
       <DialogContent className="sm:max-w-xl">
         <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
-            <DialogTitle>Ajukan Pesanan</DialogTitle>
+            <DialogTitle>Tanya / Pesan</DialogTitle>
             <DialogDescription>Periksa pesanan Anda.</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
@@ -222,7 +227,7 @@ export function ShoppingOrderDialog({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-navy">{p.name}</p>
                       <p className="text-xs text-slate-500">
-                        {formatMoney(p.unitPrice, p.currency)} · sisa {remainingById[p.id] ?? 0}
+                        {formatProductPrice(p, listing.currency)} · sisa {remainingById[p.id] ?? 0}
                       </p>
                     </div>
                     <QuantityStepper
@@ -242,6 +247,9 @@ export function ShoppingOrderDialog({
               <span className="text-slate-500">Estimasi total ({count} item)</span>
               <span className="text-right font-extrabold text-navy">{formatMoneyGroups(totals)}</span>
             </div>
+            {unpriced > 0 && (
+              <p className="text-[13px] font-medium text-slate-700">Harga {unpriced} produk dikonfirmasi provider lewat chat. Itu bukan bukti pembayaran.</p>
+            )}
             <p className="text-xs text-slate-400">
               Belum termasuk ongkir. Pembayaran diatur langsung dengan penyedia.
             </p>

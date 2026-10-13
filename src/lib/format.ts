@@ -8,7 +8,7 @@ export function formatMoney(amount: number, currency: Currency): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: currency === 'IDR' ? 0 : 2,
   });
-  return currency === 'IDR' ? `Rp${fmt.format(amount)}` : `${fmt.format(amount)} SAR`;
+  return currency === 'IDR' ? `Rp${fmt.format(amount)}` : `${fmt.format(amount)} ${currency}`;
 }
 
 /** Formats amounts grouped by currency, e.g. "120 SAR + Rp50.000". Never converts. */
@@ -89,4 +89,10 @@ export function listingTitle(l: { title: string; origin: { city: string }; desti
   t = t.trim();
   if (!t) return l.title;
   return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** Product price for display. A missing price is never shown as zero. */
+export function formatProductPrice(p: { unitPrice?: number; currency?: Currency }, fallback: Currency): string {
+  if (typeof p.unitPrice !== 'number' || p.unitPrice <= 0) return 'Tanya harga';
+  return formatMoney(p.unitPrice, p.currency ?? fallback);
 }

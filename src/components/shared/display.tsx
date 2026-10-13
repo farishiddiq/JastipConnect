@@ -70,7 +70,18 @@ export const INQUIRY_STATUS_META: Record<InquiryStatus, { label: string; tone: B
   completed: { label: 'Selesai', tone: 'green' },
 };
 
-export function InquiryStatusBadge({ status }: { status: InquiryStatus }) {
+/** Accepted inquiries show their stage: in progress, or waiting for the other side to confirm completion. */
+export function InquiryStatusBadge({
+  status,
+  inquiry,
+}: {
+  status: InquiryStatus;
+  inquiry?: { buyerConfirmedComplete?: boolean; providerConfirmedComplete?: boolean };
+}) {
+  if (status === 'accepted' && inquiry) {
+    const confirmed = Number(!!inquiry.buyerConfirmedComplete) + Number(!!inquiry.providerConfirmedComplete);
+    return <Badge tone="teal">{confirmed === 1 ? 'Menunggu konfirmasi' : 'Berlangsung'}</Badge>;
+  }
   const meta = INQUIRY_STATUS_META[status];
   return <Badge tone={meta.tone}>{meta.label}</Badge>;
 }
@@ -133,12 +144,26 @@ export function StarRating({ value, size = 16, className }: { value: number; siz
 
 export function StarInput({ value, onChange, id }: { value: number; onChange: (v: number) => void; id?: string }) {
   return (
-    <div role="radiogroup" aria-label="Pilih rating" id={id} className="flex gap-1">
+    <div
+      role="radiogroup"
+      aria-label="Pilih rating 1 sampai 5 bintang"
+      id={id}
+      className="flex gap-1"
+      onKeyDown={(e) => {
+        const step = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
+        if (!step) return;
+        e.preventDefault();
+        const next = Math.min(5, Math.max(1, (value || (step > 0 ? 0 : 6)) + step));
+        onChange(next);
+        (e.currentTarget.querySelectorAll('button')[next - 1] as HTMLButtonElement | undefined)?.focus();
+      }}
+    >
       {[1, 2, 3, 4, 5].map((i) => (
         <button
           key={i}
           type="button"
           role="radio"
+          tabIndex={value === i || (!value && i === 1) ? 0 : -1}
           aria-checked={value === i}
           aria-label={`${i} bintang`}
           onClick={() => onChange(i)}

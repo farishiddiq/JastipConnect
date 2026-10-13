@@ -14,6 +14,11 @@ export const COUNTRIES: Country[] = [
     name: 'Indonesia',
     cities: ['Jakarta', 'Surabaya', 'Bandung', 'Medan', 'Makassar', 'Yogyakarta', 'Semarang', 'Mataram', 'Banda Aceh'],
   },
+  {
+    code: 'AU',
+    name: 'Australia',
+    cities: ['Sydney', 'Melbourne', 'Perth', 'Brisbane', 'Adelaide', 'Canberra'],
+  },
 ];
 
 export function getCountry(code: string): Country | undefined {
@@ -31,6 +36,7 @@ const CITY_CODES: Record<string, string> = {
   Riyadh: 'RUH', Jeddah: 'JED', Makkah: 'MKK', Madinah: 'MED', Dammam: 'DMM', Khobar: 'KHB', Taif: 'TIF',
   Jakarta: 'CGK', Surabaya: 'SUB', Bandung: 'BDO', Medan: 'KNO', Makassar: 'UPG', Yogyakarta: 'YIA',
   Semarang: 'SRG', Mataram: 'LOP', 'Banda Aceh': 'BTJ',
+  Sydney: 'SYD', Melbourne: 'MEL', Perth: 'PER', Brisbane: 'BNE', Adelaide: 'ADL', Canberra: 'CBR',
 };
 export function cityCode(city: string): string {
   return CITY_CODES[city] ?? city.slice(0, 3).toUpperCase();
@@ -46,6 +52,8 @@ export const POPULAR_ROUTES: { from: Location; to: Location }[] = [
   { from: makeLocation('ID', 'Jakarta'), to: makeLocation('SA', 'Riyadh') },
   { from: makeLocation('ID', 'Bandung'), to: makeLocation('SA', 'Jeddah') },
   { from: makeLocation('SA', 'Madinah'), to: makeLocation('ID', 'Jakarta') },
+  { from: makeLocation('AU', 'Sydney'), to: makeLocation('ID', 'Jakarta') },
+  { from: makeLocation('ID', 'Jakarta'), to: makeLocation('AU', 'Melbourne') },
 ];
 
 export const PRODUCT_CATEGORIES = [

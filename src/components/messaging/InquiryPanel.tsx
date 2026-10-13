@@ -4,7 +4,6 @@ import { Check, CheckCircle2, ChevronDown, CircleDot, Star, X, XCircle } from 'l
 import { toast } from 'sonner';
 import type { Inquiry, Listing, Review, User } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Field, Textarea } from '@/components/ui/form';
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { InquiryStatusBadge, StarInput, StarRating } from '@/components/shared/display';
 import { useConfirm } from '@/components/shared/ConfirmProvider';
@@ -85,7 +84,7 @@ export function InquiryPanel({ inquiry, listing, me, other }: { inquiry: Inquiry
         aria-expanded={expanded}
         className="flex w-full items-center gap-2 px-4 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500"
       >
-        <InquiryStatusBadge status={inquiry.status} />
+        <InquiryStatusBadge status={inquiry.status} inquiry={inquiry} />
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">
           {listing?.type === 'weight' ? `Titip ${formatKg(inquiry.requestedKg ?? 0)}` : `${(inquiry.items ?? []).reduce((s, l) => s + l.quantity, 0)} item`}
           <span className="font-normal text-slate-500"> · {formatMoneyGroups(totals)}</span>
@@ -118,7 +117,11 @@ export function InquiryPanel({ inquiry, listing, me, other }: { inquiry: Inquiry
                       <span className="truncate">
                         {p?.name ?? 'Produk dihapus'} × {line.quantity}
                       </span>
-                      <span className="shrink-0">{formatMoney(line.quantity * line.unitPriceSnapshot, p?.currency ?? listing?.currency ?? 'SAR')}</span>
+                      <span className="shrink-0">
+                        {typeof line.unitPriceSnapshot === 'number'
+                          ? formatMoney(line.quantity * line.unitPriceSnapshot, p?.currency ?? listing?.currency ?? 'SAR')
+                          : 'Tanya harga'}
+                      </span>
                     </li>
                   );
                 })}
@@ -193,11 +196,11 @@ function ConfirmChip({ done, label }: { done: boolean; label: string }) {
 
 function ReviewSnippet({ review, mine }: { review: Review; mine: boolean }) {
   return (
-    <div className="rounded-xl bg-amber-50 p-3 text-sm ring-1 ring-amber-200">
+    <div className="rounded-xl bg-slate-100 p-3 text-sm">
       <p className="flex items-center gap-2 font-semibold text-navy">
-        {mine ? 'Ulasan Anda' : 'Ulasan pembeli'} <StarRating value={review.rating} size={14} />
+        {mine ? 'Penilaian Anda' : 'Penilaian pembeli'} <StarRating value={review.rating} size={14} />
+        <span className="num text-slate-600">{review.rating}/5</span>
       </p>
-      <p className="mt-1 text-slate-600">{review.comment}</p>
     </div>
   );
 }
@@ -216,12 +219,10 @@ function ReviewDialog({
   providerName: string;
 }) {
   const [rating, setRating] = React.useState(0);
-  const [comment, setComment] = React.useState('');
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   React.useEffect(() => {
     if (open) {
       setRating(0);
-      setComment('');
       setErrors({});
     }
   }, [open]);
@@ -230,12 +231,11 @@ function ReviewDialog({
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!rating) errs.rating = 'Pilih 1 sampai 5 bintang.';
-    if (comment.trim().length < 5) errs.comment = 'Tulis ulasan minimal 5 karakter.';
     setErrors(errs);
     if (Object.keys(errs).length) return;
-    const r = createReview(inquiry.id, buyerId, rating, comment);
+    const r = createReview(inquiry.id, buyerId, rating);
     if (!r.ok) return toast.error(r.error);
-    toast.success('Ulasan terkirim. Terima kasih.');
+    toast.success('Penilaian terkirim. Terima kasih.');
     onOpenChange(false);
   };
 
@@ -244,8 +244,8 @@ function ReviewDialog({
       <DialogContent>
         <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
-            <DialogTitle>Beri ulasan untuk {providerName}</DialogTitle>
-            <DialogDescription>Satu ulasan per transaksi.</DialogDescription>
+            <DialogTitle>Nilai {providerName}</DialogTitle>
+            <DialogDescription>Pilih tingkat kepuasan Anda. Satu penilaian per transaksi.</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <div>
@@ -259,16 +259,13 @@ function ReviewDialog({
                 </p>
               )}
             </div>
-            <Field id="review-comment" label="Ulasan" required error={errors.comment} hint={`${comment.length}/500`}>
-              <Textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={500} placeholder="Bagaimana pengalaman Anda?" />
-            </Field>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Nanti saja
             </Button>
             <Button type="submit" variant="accent">
-              Kirim ulasan
+              Kirim penilaian
             </Button>
           </DialogFooter>
         </form>

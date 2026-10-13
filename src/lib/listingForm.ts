@@ -9,9 +9,14 @@ export type ProductForm = {
   name: string;
   category: string;
   description: string;
+  /** Photo as a link or a small data URL. Optional. */
   imageUrl: string;
+  videoUrl: string;
+  /** Optional. Empty means buyers are asked to enquire. */
   unitPrice: string;
-  currency: Currency;
+  currency: Currency | '';
+  lastOrderDate: string;
+  terms: string;
   quantityAvailable: string;
   variant: string;
 };
@@ -25,9 +30,9 @@ export type ListingForm = {
   destCountry: string;
   destCity: string;
   departureDate: string;
-  returnDate: string;
+  /** Belanja only, required. */
+  arrivalDate: string;
   orderDeadline: string;
-  returnLegDropOff: boolean;
   currency: Currency;
   capacityKg: string;
   pricePerKg: string;
@@ -57,15 +62,18 @@ type ServerFields =
   | 'manuallyClosed'
   | 'closedByAdmin';
 
-export function emptyProduct(currency: Currency): ProductForm {
+export function emptyProduct(): ProductForm {
   return {
     id: uuid(),
     name: '',
     category: '',
     description: '',
     imageUrl: '',
+    videoUrl: '',
     unitPrice: '',
-    currency,
+    currency: '',
+    lastOrderDate: '',
+    terms: '',
     quantityAvailable: '',
     variant: '',
   };
@@ -81,9 +89,8 @@ export function emptyForm(type: ListingType): ListingForm {
     destCountry: 'ID',
     destCity: '',
     departureDate: '',
-    returnDate: '',
+    arrivalDate: '',
     orderDeadline: '',
-    returnLegDropOff: false,
     currency: 'SAR',
     capacityKg: '',
     pricePerKg: '',
@@ -92,7 +99,7 @@ export function emptyForm(type: ListingType): ListingForm {
     handoverMethod: '',
     terms: '',
     coverImageUrl: '',
-    products: type === 'shopping' ? [emptyProduct('SAR')] : [],
+    products: type === 'shopping' ? [emptyProduct()] : [],
     acknowledgedRules: false,
   };
 }
@@ -109,9 +116,9 @@ export function formFromListing(l: Listing): ListingForm {
     originCity: l.origin.city,
     destCountry: l.destination.countryCode,
     destCity: l.destination.city,
-    departureDate: l.departureDate,
-    returnDate: l.returnDate ?? '',
-    orderDeadline: l.orderDeadline,
+    departureDate: l.departureDate ?? '',
+    arrivalDate: l.type === 'shopping' ? (l.arrivalDate ?? '') : '',
+    orderDeadline: l.orderDeadline ?? '',
     currency: l.currency,
     prohibitedItemsNote: l.prohibitedItemsNote ?? '',
     handoverMethod: l.handoverMethod ?? '',
@@ -123,7 +130,6 @@ export function formFromListing(l: Listing): ListingForm {
           capacityKg: numStr(l.capacityKg),
           pricePerKg: numStr(l.pricePerKg),
           permittedItemsNote: l.permittedItemsNote ?? '',
-          returnLegDropOff: !!l.returnLegDropOff,
           products: [],
         }
       : {
@@ -133,8 +139,11 @@ export function formFromListing(l: Listing): ListingForm {
             category: p.category,
             description: p.description ?? '',
             imageUrl: p.imageUrl ?? '',
+            videoUrl: p.videoUrl ?? '',
             unitPrice: numStr(p.unitPrice),
-            currency: p.currency,
+            currency: p.currency ?? '',
+            lastOrderDate: p.lastOrderDate ?? '',
+            terms: p.terms ?? '',
             quantityAvailable: String(p.quantityAvailable),
             variant: p.variant ?? '',
           })),
@@ -161,9 +170,8 @@ export function payloadFromForm(f: ListingForm): ListingPayload {
     description: f.description.trim(),
     origin: makeLocation(f.originCountry, f.originCity.trim()),
     destination: makeLocation(f.destCountry, f.destCity.trim()),
-    departureDate: f.departureDate,
-    returnDate: opt(f.returnDate),
-    orderDeadline: f.orderDeadline,
+    departureDate: opt(f.departureDate),
+    orderDeadline: opt(f.orderDeadline),
     currency: f.currency,
     terms: f.terms.trim(),
     prohibitedItemsNote: opt(f.prohibitedItemsNote),
@@ -178,7 +186,6 @@ export function payloadFromForm(f: ListingForm): ListingPayload {
       capacityKg: toNum(f.capacityKg),
       pricePerKg: toNum(f.pricePerKg),
       permittedItemsNote: opt(f.permittedItemsNote),
-      returnLegDropOff: f.returnLegDropOff || undefined,
     };
   }
   const products: Product[] = f.products.map((p) => ({
@@ -187,12 +194,16 @@ export function payloadFromForm(f: ListingForm): ListingPayload {
     category: p.category || 'Lainnya',
     description: opt(p.description),
     imageUrl: opt(p.imageUrl),
-    unitPrice: toNum(p.unitPrice),
-    currency: p.currency,
+    unitPrice: p.unitPrice.trim() ? toNum(p.unitPrice) : undefined,
+    // A price always carries a currency; fall back to the listing currency rather than inventing one.
+    currency: p.unitPrice.trim() ? p.currency || f.currency : p.currency || undefined,
+    lastOrderDate: opt(p.lastOrderDate),
+    terms: opt(p.terms),
+    videoUrl: opt(p.videoUrl),
     quantityAvailable: Math.max(0, Math.floor(toNum(p.quantityAvailable))),
     variant: opt(p.variant),
   }));
-  return { ...common, type: 'shopping', products };
+  return { ...common, type: 'shopping', arrivalDate: f.arrivalDate, products };
 }
 
 export type ValidationContext = {
@@ -205,17 +216,18 @@ export type ValidationContext = {
 };
 
 const isUrl = (s: string) => /^https?:\/\/\S+$/i.test(s.trim());
+const isMedia = (s: string) => isUrl(s) || /^data:(image|video)\//i.test(s.trim());
 const isPositive = (s: string) => s.trim() !== '' && toNum(s) > 0;
 
 export const STEP_FIELDS: Record<ListingType, string[][]> = {
   weight: [
-    ['originCountry', 'originCity', 'destCountry', 'destCity', 'route', 'departureDate', 'returnDate', 'orderDeadline'],
+    ['originCountry', 'originCity', 'destCountry', 'destCity', 'route', 'departureDate', 'orderDeadline'],
     ['capacityKg', 'pricePerKg', 'currency'],
     ['title', 'description', 'handoverMethod', 'terms', 'coverImageUrl', 'permittedItemsNote', 'prohibitedItemsNote'],
     ['acknowledgedRules'],
   ],
   shopping: [
-    ['originCountry', 'originCity', 'destCountry', 'destCity', 'route', 'departureDate', 'returnDate', 'orderDeadline', 'currency'],
+    ['originCountry', 'originCity', 'destCountry', 'destCity', 'route', 'departureDate', 'arrivalDate', 'orderDeadline', 'currency'],
     ['products'],
     ['title', 'description', 'handoverMethod', 'terms', 'coverImageUrl', 'prohibitedItemsNote'],
     ['acknowledgedRules'],
@@ -243,28 +255,39 @@ export function validateListingForm(f: ListingForm, ctx: ValidationContext = {})
     e.route = 'Kota asal dan tujuan tidak boleh sama.';
   }
 
-  const depUnchanged = o && o.departureDate === f.departureDate;
-  if (!isValidDateKey(f.departureDate)) e.departureDate = 'Isi tanggal keberangkatan.';
-  else if (!depUnchanged && daysUntil(f.departureDate) < 0) e.departureDate = 'Tanggal keberangkatan sudah lewat.';
+  const isWeight = f.type === 'weight';
+  const pastOk = (value: string | undefined, current: string) => !!o && (value ?? '') === current;
 
-  if (f.returnDate) {
-    if (!isValidDateKey(f.returnDate)) e.returnDate = 'Format tanggal kembali tidak valid.';
-    else if (isValidDateKey(f.departureDate) && parseDateKey(f.returnDate) <= parseDateKey(f.departureDate))
-      e.returnDate = 'Tanggal kembali harus setelah tanggal berangkat.';
+  // Departure: required for bagasi, optional for belanja.
+  if (f.departureDate) {
+    if (!isValidDateKey(f.departureDate)) e.departureDate = 'Format tanggal keberangkatan tidak valid.';
+    else if (!pastOk(o?.departureDate, f.departureDate) && daysUntil(f.departureDate) < 0) e.departureDate = 'Tanggal keberangkatan sudah lewat.';
+  } else if (isWeight) {
+    e.departureDate = 'Isi tanggal keberangkatan.';
   }
 
-  const deadlineLabel = f.type === 'weight' ? 'Batas terakhir titip' : 'Batas pemesanan';
-  const dlUnchanged = o && o.orderDeadline === f.orderDeadline;
-  if (!isValidDateKey(f.orderDeadline)) e.orderDeadline = `Isi tanggal ${deadlineLabel.toLowerCase()}.`;
-  else if (!dlUnchanged && daysUntil(f.orderDeadline) < 0) e.orderDeadline = `${deadlineLabel} sudah lewat.`;
-  else if (isValidDateKey(f.departureDate) && parseDateKey(f.orderDeadline) > parseDateKey(f.departureDate)) {
-    if (f.type === 'weight' && f.returnLegDropOff) {
-      if (!f.returnDate) e.orderDeadline = 'Untuk titip di perjalanan pulang, isi tanggal kembali terlebih dahulu.';
-      else if (isValidDateKey(f.returnDate) && parseDateKey(f.orderDeadline) > parseDateKey(f.returnDate))
-        e.orderDeadline = `${deadlineLabel} tidak boleh setelah tanggal kembali.`;
-    } else {
-      e.orderDeadline = `${deadlineLabel} tidak boleh setelah tanggal keberangkatan.`;
+  // Arrival: required for belanja.
+  if (!isWeight) {
+    const oldArrival = o?.type === 'shopping' ? o.arrivalDate : undefined;
+    if (!f.arrivalDate) e.arrivalDate = 'Isi tanggal tiba.';
+    else if (!isValidDateKey(f.arrivalDate)) e.arrivalDate = 'Format tanggal tiba tidak valid.';
+    else if (!pastOk(oldArrival, f.arrivalDate) && daysUntil(f.arrivalDate) < 0) e.arrivalDate = 'Tanggal tiba sudah lewat.';
+    else if (isValidDateKey(f.departureDate) && parseDateKey(f.arrivalDate) < parseDateKey(f.departureDate))
+      e.arrivalDate = 'Tanggal tiba tidak boleh sebelum tanggal berangkat.';
+  }
+
+  // Last drop-off (bagasi, required) or order date (belanja, optional).
+  const deadlineLabel = isWeight ? 'Batas terakhir titip' : 'Batas pemesanan';
+  if (f.orderDeadline) {
+    if (!isValidDateKey(f.orderDeadline)) e.orderDeadline = 'Format tanggal tidak valid.';
+    else if (!pastOk(o?.orderDeadline, f.orderDeadline) && daysUntil(f.orderDeadline) < 0) e.orderDeadline = `${deadlineLabel} sudah lewat.`;
+    else {
+      const limit = isValidDateKey(f.departureDate) ? f.departureDate : !isWeight && isValidDateKey(f.arrivalDate) ? f.arrivalDate : '';
+      if (limit && parseDateKey(f.orderDeadline) > parseDateKey(limit))
+        e.orderDeadline = `${deadlineLabel} tidak boleh setelah ${limit === f.departureDate ? 'tanggal keberangkatan' : 'tanggal tiba'}.`;
     }
+  } else if (isWeight) {
+    e.orderDeadline = `Isi tanggal ${deadlineLabel.toLowerCase()}.`;
   }
 
   if (f.type === 'weight') {
@@ -278,13 +301,14 @@ export function validateListingForm(f: ListingForm, ctx: ValidationContext = {})
     f.products.forEach((p, i) => {
       if (p.name.trim().length < 2) e[`products.${i}.name`] = 'Nama produk wajib diisi.';
       if (!p.category) e[`products.${i}.category`] = 'Pilih kategori.';
-      if (!isPositive(p.unitPrice)) e[`products.${i}.unitPrice`] = 'Harga harus lebih dari 0.';
+      if (p.unitPrice.trim() && !isPositive(p.unitPrice)) e[`products.${i}.unitPrice`] = 'Harga harus lebih dari 0, atau kosongkan.';
+      if (p.lastOrderDate && !isValidDateKey(p.lastOrderDate)) e[`products.${i}.lastOrderDate`] = 'Format tanggal tidak valid.';
       const q = toNum(p.quantityAvailable);
       if (p.quantityAvailable.trim() === '' || q < 0 || !Number.isInteger(q))
         e[`products.${i}.quantityAvailable`] = 'Isi stok berupa bilangan bulat ≥ 0.';
       else if ((ctx.reservedByProduct?.[p.id] ?? 0) > q)
         e[`products.${i}.quantityAvailable`] = `Minimal ${ctx.reservedByProduct![p.id]} (sudah dipesan & diterima).`;
-      if (p.imageUrl.trim() && !isUrl(p.imageUrl)) e[`products.${i}.imageUrl`] = 'URL gambar harus diawali http:// atau https://';
+      if (p.imageUrl.trim() && !isMedia(p.imageUrl)) e[`products.${i}.imageUrl`] = 'Foto harus berupa tautan http(s) atau file yang diunggah.';
     });
     if (f.products.length > 0 && !f.products.some((p) => toNum(p.quantityAvailable) > 0) && !e.products)
       e.products = 'Minimal satu produk harus memiliki stok.';
@@ -296,7 +320,6 @@ export function validateListingForm(f: ListingForm, ctx: ValidationContext = {})
   else if (f.title.trim().length > 100) e.title = 'Judul maksimal 100 karakter.';
   if (f.description.trim().length < 20) e.description = 'Deskripsi minimal 20 karakter agar calon penitip paham.';
   if (!f.handoverMethod.trim()) e.handoverMethod = 'Pilih cara serah terima.';
-  if (f.terms.trim().length < 10) e.terms = 'Tuliskan syarat & ketentuan (minimal 10 karakter).';
   if (f.coverImageUrl.trim() && !isUrl(f.coverImageUrl)) e.coverImageUrl = 'URL gambar harus diawali http:// atau https://';
 
   if (!f.acknowledgedRules) e.acknowledgedRules = 'Anda wajib menyetujui ketentuan barang terlarang sebelum menerbitkan.';

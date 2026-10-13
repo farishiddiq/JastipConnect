@@ -47,8 +47,10 @@ export function isSoldOut(listing: ShoppingListing, inquiries: Inquiry[]): boole
   return productAvailability(listing, inquiries).every((a) => a.remaining <= 0);
 }
 
+/** Last day to order. Belanja without an order deadline stays open until its arrival date. */
 export function isDeadlinePassed(listing: Listing): boolean {
-  return daysUntil(listing.orderDeadline) < 0;
+  const last = listing.orderDeadline ?? (listing.type === 'shopping' ? listing.arrivalDate : undefined);
+  return last ? daysUntil(last) < 0 : false;
 }
 
 /**
@@ -89,13 +91,15 @@ export function availabilitySummary(listing: Listing, inquiries: Inquiry[]): Ava
 }
 
 /** Reference price for sorting/filtering: fee per kg, or the cheapest product in listing currency. */
-export function referencePrice(listing: Listing): { amount: number; currency: Currency } {
+export function referencePrice(listing: Listing): { amount: number; currency: Currency } | null {
   if (listing.type === 'weight') return { amount: listing.pricePerKg, currency: listing.currency };
-  const sameCur = listing.products.filter((p) => p.currency === listing.currency);
-  const pool = sameCur.length ? sameCur : listing.products;
-  if (!pool.length) return { amount: 0, currency: listing.currency };
+  const priced = listing.products.filter((p): p is Product & { unitPrice: number } => typeof p.unitPrice === 'number' && p.unitPrice > 0);
+  if (!priced.length) return null; // every product asks the buyer to enquire
+  const cur = (p: Product) => p.currency ?? listing.currency;
+  const sameCur = priced.filter((p) => cur(p) === listing.currency);
+  const pool = sameCur.length ? sameCur : priced;
   const min = pool.reduce((a, b) => (a.unitPrice <= b.unitPrice ? a : b));
-  return { amount: min.unitPrice, currency: min.currency };
+  return { amount: min.unitPrice, currency: cur(min) };
 }
 
 export function inquiryTotals(inquiry: Inquiry, listing: Listing | undefined): Partial<Record<Currency, number>> {
@@ -106,6 +110,7 @@ export function inquiryTotals(inquiry: Inquiry, listing: Listing | undefined): P
   const totals: Partial<Record<Currency, number>> = {};
   for (const line of inquiry.items ?? []) {
     const p = listing.products.find((x) => x.id === line.productId);
+    if (typeof line.unitPriceSnapshot !== 'number') continue; // unpriced item: quoted in chat
     const cur = p?.currency ?? listing.currency;
     totals[cur] = round2((totals[cur] ?? 0) + line.quantity * line.unitPriceSnapshot);
   }

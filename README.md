@@ -2,10 +2,10 @@
 
 **Titip barang, temukan perjalanan, terhubung dengan diaspora.**
 
-JastipConnect is a demo of a jastip (personal-courier) marketplace for the Indonesian diaspora, starting with the Saudi Arabia ↔ Indonesia corridor. It's a mobile-first web app with two listing types:
+JastipConnect is a demo of a jastip (personal-courier) marketplace for the Indonesian diaspora, with two corridors: Saudi Arabia ↔ Indonesia and Australia ↔ Indonesia. Each direction is its own listing. It's a mobile-first web app with two listing types:
 
 - **Jastip Bagasi (by weight):** a traveler posts a route, dates, spare baggage (kg), a fee per kg, and a last drop-off date. Buyers ask about sending items by giving an estimated weight.
-- **Jastip Belanja (by item):** a personal shopper posts a catalog of products (price, stock, order deadline). Buyers order products by quantity.
+- **Jastip Belanja (by item):** a personal shopper posts a catalog of products. Arrival date is required; departure date, order deadline, and the product's price, currency, description, last order date, photo/video and terms are all optional. Items without a price show "Tanya harga". Buyers order products by quantity.
 
 The app is built with React, TypeScript, Vite, Tailwind CSS, and shadcn-style components (Radix primitives). It uses lucide-react icons, React Router, and sonner for toasts.
 **All data lives in the browser's `localStorage`. There is no backend.**
@@ -33,7 +33,7 @@ npm run preview   # serve the dist/ build
 2. Open the listing **"Bagasi kosong Riyadh → Jakarta, 20 kg"** and click **Tanya Provider**. As a guest, you'll be asked to pick a demo account. Choose **Aisyah**.
 3. Fill in the inquiry (for example, 4 kg). You're taken to the conversation in the Inbox.
 4. Click **"Balas sebagai Ahmad"** in the chat header to switch to the provider account. Click **Terima** and the quota drops from 15 kg to 11 kg. Send a message.
-5. Click **Tandai selesai** as Ahmad. Switch back to Aisyah and click **Konfirmasi selesai**. Then click **Beri ulasan** to leave a review (one review per transaction).
+5. Click **Tandai selesai** as Ahmad. Switch back to Aisyah and click **Konfirmasi selesai**. Then click **Beri penilaian** to give a 1 to 5 star rating (one rating per transaction, no free-text comments).
 6. As **Ahmad**, go to `/post` → Jastip Bagasi. Fill in the wizard and publish. Refresh the page and the listing is still there.
 7. Open a listing that isn't yours, click **Laporkan**, then switch to **Admin Demo** and go to `/admin` to moderate it.
 8. Go to `/profile` → **Reset Data Demo** to restore the initial data.
@@ -58,7 +58,7 @@ The seed data also includes Siti, Rizky, and Budi, so the marketplace looks live
 | `/` | Home: hero search, categories, featured & new listings, how it works, safety, CTA | Public |
 | `/explore` | Search + filters (synced to the URL query string) | Public |
 | `/listings/:id` | Listing detail (buyer CTA or owner actions) | Public |
-| `/providers/:id` | Public provider profile + reviews | Public |
+| `/providers/:id` | Public provider profile + star ratings | Public |
 | `/post` | Pick a type → listing wizard | Member |
 | `/listings/:id/edit` | Edit / continue a draft | Owner |
 | `/my-listings` | Active / Full / Closed / Draft tabs, metrics | Member |
@@ -79,7 +79,10 @@ Filters on `/explore` live in the query string (`q`, `type`, `oc`, `ocity`, `dc`
 - **Shopping listing stock:** stock is reserved only when an order is **accepted**. The app prevents overselling. A product shows **Sold Out** when its stock runs out, and when every product is out the listing becomes `Full`.
 - **Derived status:** `draft` → `closed` (closed manually or by the admin) → `expired` (past the drop-off/order deadline) → `full` → `open`. A manually closed listing is **never reopened automatically** when quota frees up.
 - **Edit limits:** capacity or stock can't go below what's already accepted. A product with active orders can't be removed.
-- **Completion:** both buyer and provider must confirm. Only a completed transaction can be reviewed, and only by the buyer, once.
+- **Bagasi is one-way.** No return date or return trip. A provider who travels both ways posts two independent listings.
+- **Default order:** dated departures first (earliest first, ties by last drop-off or order date), then listings without a departure date by arrival date. Missing dates sort last and are never invented.
+- **Inquiry stages:** `Menunggu` → `Diterima` (shown as `Berlangsung`, or `Menunggu konfirmasi` once one side has confirmed) → `Selesai`; also `Ditolak` and `Dibatalkan`. Payment is arranged off-platform.
+- **Completion:** both buyer and provider must confirm. Only a completed transaction can be rated, and only by the buyer, once, with 1 to 5 stars.
 - **Cancellation:** the buyer can cancel a pending or accepted inquiry. Cancelling releases the reserved quota or stock.
 - **Admin:** can close (unpublish) a reported listing. The owner can't reopen it until the admin lifts the block.
 
@@ -87,7 +90,7 @@ Filters on `/explore` live in the query string (`q`, `type`, `oc`, `ocity`, `dc`
 
 ## localStorage contract
 
-Versioned namespace `jc:v1:`:
+Versioned namespace `jc:v1:`, with `settings.schemaVersion` (currently 2). Older data is migrated once on load: round-trip fields are dropped, belanja gets an arrival date, zero prices become unpriced, review comments are discarded, and the Australia demo data is merged in by id without touching user-created data.
 
 `jc:v1:users`, `jc:v1:session`, `jc:v1:listings`, `jc:v1:inquiries`, `jc:v1:conversations`, `jc:v1:messages`, `jc:v1:reviews`, `jc:v1:reports`, `jc:v1:notifications`, `jc:v1:settings` (includes the per-user saved list and a seed marker).
 
@@ -107,7 +110,7 @@ The app shows these limits in a demo banner, on `/safety#demo`, and in microcopy
 - **Not multi-user.** `localStorage` is per browser and device. "Chatting between accounts" only works by switching accounts in the same browser. There's no real-time messaging, push notifications, email, SMS, or WhatsApp.
 - **No payments.** No escrow, payment gateway, or fees. The **Promosikan Listing** panel is a "Segera Hadir" (coming soon) preview and can't be purchased.
 - **No identity verification.** The "Verifikasi demo" (demo verification) label is cosmetic. Other users show "Belum diverifikasi" (not yet verified).
-- **No currency conversion.** Prices are shown in SAR or IDR as listed. Sorting by price groups listings by currency.
+- **No currency conversion.** Prices are shown in SAR, AUD or IDR as listed. Sorting by price groups listings by currency.
 - **Not legal advice.** The prohibited-items list is a non-exhaustive example. Airline rules, customs, and import/export rules are the users' responsibility.
 - **Link previews:** the page title and meta description are updated on the client side. Because this is a client-only SPA, **WhatsApp and social Open Graph previews can't be guaranteed** without server-side rendering or prerendering.
 - **Share:** uses `navigator.share` when available. Otherwise it copies the link to the clipboard, and if that also fails, it shows the link in a dialog for manual copying.
@@ -134,7 +137,7 @@ src/
     layout/       AppLayout (header, bottom nav, demo banner, footer), Guards, Logo
     listings/     ListingCard, SaveButton, AvailabilityMeter, PromotePanel
     forms/        ListingWizard (weight + shopping), InquiryForms (weight/order dialogs)
-    messaging/    InquiryPanel (accept/decline/cancel/complete/review)
+    messaging/    InquiryPanel (accept/decline/cancel/complete/star rating)
     shared/       display primitives, AccountSwitcher (+useAuth), ConfirmProvider, ShareButton, ReportDialog, SafetyNotice
     ui/           button, form, dialog, dropdown-menu, misc (Card, Badge, Tabs)
   pages/          one file per route

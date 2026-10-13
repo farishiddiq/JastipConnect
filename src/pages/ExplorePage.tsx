@@ -247,7 +247,7 @@ function FilterFields({ filters: f, update, idPrefix }: { filters: ExploreFilter
     <div className="divide-y divide-slate-300/60 [&>*]:py-6 [&>:first-child]:pt-2 [&>:last-child]:pb-0">
       <div role="group" className="space-y-4">
         <p className="text-sm font-semibold text-navy">Arah</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <DirectionButton active={!f.oc && !f.dc} onClick={() => update({ oc: '', dc: '', ocity: '', dcity: '' })}>
             Semua
           </DirectionButton>
@@ -256,6 +256,12 @@ function FilterFields({ filters: f, update, idPrefix }: { filters: ExploreFilter
           </DirectionButton>
           <DirectionButton active={f.oc === 'ID' && f.dc === 'SA'} onClick={() => update({ oc: 'ID', dc: 'SA', ocity: '', dcity: '' })} label="Indonesia ke Arab Saudi">
             ID → SA
+          </DirectionButton>
+          <DirectionButton active={f.oc === 'AU' && f.dc === 'ID'} onClick={() => update({ oc: 'AU', dc: 'ID', ocity: '', dcity: '' })} label="Australia ke Indonesia">
+            AU → ID
+          </DirectionButton>
+          <DirectionButton active={f.oc === 'ID' && f.dc === 'AU'} onClick={() => update({ oc: 'ID', dc: 'AU', ocity: '', dcity: '' })} label="Indonesia ke Australia">
+            ID → AU
           </DirectionButton>
         </div>
         <Field id={id('ocity')} label="Kota asal">
@@ -296,6 +302,7 @@ function FilterFields({ filters: f, update, idPrefix }: { filters: ExploreFilter
           <Select className={field} value={f.cur} onChange={(e) => update({ cur: e.target.value as ExploreFilters['cur'], pmin: '', pmax: '' })}>
             <option value="">Semua</option>
             <option value="SAR">SAR (Riyal)</option>
+            <option value="AUD">AUD (Dolar Australia)</option>
             <option value="IDR">IDR (Rupiah)</option>
           </Select>
         </Field>

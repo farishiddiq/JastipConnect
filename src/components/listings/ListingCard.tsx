@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, Clock, Plane } from 'lucide-react';
+import { Bookmark, Clock, Plane, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ListingView } from '@/hooks/useStore';
 import { useSavedIds } from '@/hooks/useStore';
-import { ListingCover, ListingStatusBadge } from '@/components/shared/display';
+import { ListingCover, ListingStatusBadge, TYPE_LABEL } from '@/components/shared/display';
 import { useAuth } from '@/components/shared/AccountSwitcher';
 import { toggleSaved } from '@/services/userService';
 import { formatDateShort, formatKg, formatMoney, listingTitle } from '@/lib/format';
 import { cityCode } from '@/data/locations';
+import { dateFacts, primaryDate } from '@/lib/listingDates';
 import { referencePrice } from '@/lib/availability';
 import { Reveal } from '@/components/shared/Reveal';
 import { cn } from '@/lib/utils';
@@ -72,6 +73,13 @@ export function PriceLabel({ view, className }: { view: ListingView; className?:
     );
   }
   const ref = referencePrice(l);
+  if (!ref) {
+    return (
+      <p className={cn('text-navy', className)}>
+        <span className="text-sm font-semibold">Tanya harga</span>
+      </p>
+    );
+  }
   return (
     <p className={cn('text-navy', className)}>
       <span className="text-sm text-slate-500">mulai </span>
@@ -83,6 +91,7 @@ export function PriceLabel({ view, className }: { view: ListingView; className?:
 export function ListingCard({ view, showViews, compact }: { view: ListingView; showViews?: boolean; compact?: boolean }) {
   const { listing: l, status } = view;
   const muted = status !== 'open';
+  const primary = primaryDate(l);
   const from = cityCode(l.origin.city);
   const to = cityCode(l.destination.city);
   return (
@@ -95,13 +104,25 @@ export function ListingCard({ view, showViews, compact }: { view: ListingView; s
       <div className={cn('ticket flex h-full flex-col bg-white', compact ? 'rounded-2xl p-1.5 [--cut:5.875rem] sm:p-2 sm:[--cut:6rem]' : 'rounded-3xl p-3 [--cut:6.75rem]')}>
         <div className={cn('relative overflow-hidden', compact ? 'aspect-[3/2] rounded-xl' : 'aspect-[4/3] rounded-2xl')}>
           <ListingCover listing={l} />
-          <span className={cn('num absolute inline-flex items-center rounded-full bg-white font-medium text-teal-700 shadow-sm', compact ? 'left-2 top-2 gap-1 px-2 py-1 text-xs' : 'left-3 top-3 gap-1.5 px-3 py-1.5 text-[13px]')}>
-            <Clock className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
-            {formatDateShort(l.departureDate)}
-          </span>
+          {primary && (
+            <span className={cn('num absolute inline-flex items-center rounded-full bg-white font-medium text-teal-700 shadow-sm', compact ? 'left-2 top-2 gap-1 px-2 py-1 text-xs' : 'left-3 top-3 gap-1.5 px-3 py-1.5 text-[13px]')}>
+              <Clock className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
+              {l.departureDate ? '' : 'Tiba '}
+              {formatDateShort(primary)}
+            </span>
+          )}
           <SaveButton listingId={l.id} className={cn('absolute z-10 !bg-white', compact ? 'right-2 top-2 !h-8 !w-8' : 'right-3 top-3 !h-9 !w-9')} />
+          <span
+            className={cn(
+              'absolute inline-flex items-center gap-1 rounded-full bg-white font-semibold text-navy shadow-sm',
+              compact ? 'bottom-2 left-2 px-2 py-1 text-[0.6875rem]' : 'bottom-3 left-3 px-3 py-1.5 text-xs',
+            )}
+          >
+            {l.type === 'weight' ? <Plane className="h-3 w-3 text-teal-600" aria-hidden /> : <ShoppingBag className="h-3 w-3 text-teal-600" aria-hidden />}
+            {TYPE_LABEL[l.type]}
+          </span>
           {muted && (
-            <div className={compact ? 'absolute bottom-2 left-2' : 'absolute bottom-3 left-3'}>
+            <div className={compact ? 'absolute bottom-2 right-2' : 'absolute bottom-3 right-3'}>
               <ListingStatusBadge status={status} type={l.type} />
             </div>
           )}
@@ -112,7 +133,12 @@ export function ListingCard({ view, showViews, compact }: { view: ListingView; s
               {listingTitle(l)}
             </Link>
           </h3>
-          {showViews && <p className="mt-0.5 text-xs text-slate-500">{l.viewCount} dilihat</p>}
+          <p className="mt-0.5 truncate text-xs text-slate-600">
+            {dateFacts(l)
+              .map((d) => `${d.label} ${d.value}`)
+              .join(' · ') || 'Tanggal belum ditentukan'}
+            {showViews && ` · ${l.viewCount} dilihat`}
+          </p>
         </div>
         <div
           className={cn('ticket-stub mx-2 flex flex-col justify-center gap-1 border-t-2 border-dashed border-slate-300', compact ? 'h-[5.5rem]' : 'h-[6rem]')}

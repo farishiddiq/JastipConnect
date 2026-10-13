@@ -12,7 +12,7 @@ export const REPORT_REASONS = [
   'Lainnya',
 ];
 
-export function createReview(inquiryId: string, buyerId: string, rating: number, comment: string): Result<Review> {
+export function createReview(inquiryId: string, buyerId: string, rating: number): Result<Review> {
   const { inquiries, reviews } = store.getState();
   const inquiry = inquiries.find((i) => i.id === inquiryId);
   if (!inquiry) return fail('Inquiry tidak ditemukan.');
@@ -20,9 +20,6 @@ export function createReview(inquiryId: string, buyerId: string, rating: number,
   if (inquiry.status !== 'completed') return fail('Ulasan hanya bisa diberikan setelah transaksi selesai.');
   if (reviews.some((r) => r.inquiryId === inquiryId)) return fail('Anda sudah memberi ulasan untuk transaksi ini.');
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return fail('Pilih rating 1 sampai 5 bintang.');
-  const text = comment.trim();
-  if (text.length < 5) return fail('Tulis ulasan minimal 5 karakter.');
-  if (text.length > 500) return fail('Ulasan maksimal 500 karakter.');
 
   const review: Review = {
     id: uuid(),
@@ -30,7 +27,6 @@ export function createReview(inquiryId: string, buyerId: string, rating: number,
     providerId: inquiry.providerId,
     buyerId,
     rating,
-    comment: text,
     createdAt: nowIso(),
   };
   const saved = store.transaction({

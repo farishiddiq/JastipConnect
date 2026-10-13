@@ -2,6 +2,7 @@ import type { Currency, ListingType } from '@/types';
 import type { ListingView } from '@/hooks/useStore';
 import { referencePrice } from './availability';
 import { isValidDateKey } from './dates';
+import { compareListingDates, primaryDate } from './listingDates';
 
 export type SortKey = 'newest' | 'departure' | 'price_asc' | 'price_desc';
 
@@ -53,7 +54,7 @@ export function parseFilters(p: URLSearchParams): ExploreFilters {
     from: isValidDateKey(p.get('from') ?? '') ? p.get('from')! : '',
     to: isValidDateKey(p.get('to') ?? '') ? p.get('to')! : '',
     includeClosed: p.get('all') === '1',
-    cur: cur === 'SAR' || cur === 'IDR' ? cur : '',
+    cur: cur === 'SAR' || cur === 'IDR' || cur === 'AUD' ? cur : '',
     pmin: p.get('pmin') ?? '',
     pmax: p.get('pmax') ?? '',
     sort: sort && SORTS.includes(sort) ? sort : DEFAULT_FILTERS.sort,
@@ -112,11 +113,13 @@ export function applyFilters(views: ListingView[], f: ExploreFilters): ListingVi
     if (f.ocity && l.origin.city.toLowerCase() !== f.ocity.toLowerCase()) return false;
     if (f.dc && l.destination.countryCode !== f.dc) return false;
     if (f.dcity && l.destination.city.toLowerCase() !== f.dcity.toLowerCase()) return false;
-    if (f.from && l.departureDate < f.from) return false;
-    if (f.to && l.departureDate > f.to) return false;
+    const when = primaryDate(l);
+    if ((f.from || f.to) && !when) return false;
+    if (f.from && when! < f.from) return false;
+    if (f.to && when! > f.to) return false;
     if (f.cur) {
       const ref = referencePrice(l);
-      if (ref.currency !== f.cur) return false;
+      if (!ref || ref.currency !== f.cur) return false;
       if (pmin !== null && !Number.isNaN(pmin) && ref.amount < pmin) return false;
       if (pmax !== null && !Number.isNaN(pmax) && ref.amount > pmax) return false;
     }
@@ -138,12 +141,13 @@ export function applyFilters(views: ListingView[], f: ExploreFilters): ListingVi
       case 'price_desc': {
         const pa = referencePrice(a.listing);
         const pb = referencePrice(b.listing);
+        if (!pa || !pb) return Number(!pa) - Number(!pb);
         // Prices are only comparable within a currency; group by currency first.
         if (pa.currency !== pb.currency) return pa.currency.localeCompare(pb.currency);
         return f.sort === 'price_asc' ? pa.amount - pb.amount : pb.amount - pa.amount;
       }
       default:
-        return a.listing.departureDate.localeCompare(b.listing.departureDate);
+        return compareListingDates(a.listing, b.listing);
     }
   });
   return out;

@@ -1,7 +1,7 @@
 export type ListingType = 'weight' | 'shopping';
 export type ListingStatus = 'draft' | 'open' | 'full' | 'closed' | 'expired';
 export type InquiryStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed';
-export type Currency = 'SAR' | 'IDR';
+export type Currency = 'SAR' | 'IDR' | 'AUD';
 
 export type Location = { countryCode: string; country: string; city: string };
 
@@ -25,8 +25,13 @@ export type Product = {
   category: string;
   description?: string;
   imageUrl?: string;
-  unitPrice: number;
-  currency: Currency;
+  /** Optional: when missing the UI shows "Tanya harga". */
+  unitPrice?: number;
+  currency?: Currency;
+  lastOrderDate?: string;
+  /** Product-level terms, separate from the listing-level terms. */
+  terms?: string;
+  videoUrl?: string;
   /** Total stock offered. Remaining stock is derived from accepted inquiries. */
   quantityAvailable: number;
   variant?: string;
@@ -41,10 +46,10 @@ type ListingBase = {
   description: string;
   origin: Location;
   destination: Location;
-  departureDate: string;
-  returnDate?: string;
-  /** Last drop-off date (weight) or order deadline (shopping). */
-  orderDeadline: string;
+  /** Required for bagasi, optional for belanja. */
+  departureDate?: string;
+  /** Last drop-off date (bagasi) or order deadline (belanja, optional). */
+  orderDeadline?: string;
   currency: Currency;
   terms: string;
   prohibitedItemsNote?: string;
@@ -64,18 +69,18 @@ export type WeightListing = ListingBase & {
   capacityKg: number;
   pricePerKg: number;
   permittedItemsNote?: string;
-  /** Allows a last-drop date after departure (items carried on the return leg). */
-  returnLegDropOff?: boolean;
 };
 
 export type ShoppingListing = ListingBase & {
   type: 'shopping';
+  /** Required for belanja when creating or editing. */
+  arrivalDate?: string;
   products: Product[];
 };
 
 export type Listing = WeightListing | ShoppingListing;
 
-export type InquiryLine = { productId: string; quantity: number; unitPriceSnapshot: number };
+export type InquiryLine = { productId: string; quantity: number; unitPriceSnapshot?: number };
 
 export type Inquiry = {
   id: string;
@@ -115,8 +120,8 @@ export type Review = {
   inquiryId: string;
   providerId: string;
   buyerId: string;
+  /** Satisfaction level, 1 to 5. Free-text comments are intentionally not supported. */
   rating: number;
-  comment: string;
   createdAt: string;
 };
 
@@ -151,6 +156,8 @@ export type Settings = {
   seededAt: string | null;
   theme?: ThemePreference;
   demoBannerDismissed: boolean;
+  /** Data schema version; used to migrate older localStorage data. */
+  schemaVersion?: number;
   /** userId -> saved listing ids */
   saved: Record<string, string[]>;
 };

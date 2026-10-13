@@ -8,6 +8,7 @@ import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { Badge, Card } from '@/components/ui/misc';
 import { ListingCover, ProductThumb, RouteDisplay, TypeBadge } from '@/components/shared/display';
 import { SafetyNotice } from '@/components/shared/SafetyNotice';
+import { MediaPicker } from '@/components/forms/MediaPicker';
 import { useConfirm } from '@/components/shared/ConfirmProvider';
 import { COUNTRIES, getCountry, HANDOVER_METHODS, PRODUCT_CATEGORIES } from '@/data/locations';
 import {
@@ -22,8 +23,8 @@ import {
   type ProductForm,
   type ValidationContext,
 } from '@/lib/listingForm';
+import { formatDate, formatKg, formatMoney, formatProductPrice } from '@/lib/format';
 import { createListing, updateListing } from '@/services/listingService';
-import { formatDate, formatKg, formatMoney } from '@/lib/format';
 import { todayKey } from '@/lib/dates';
 import { cn, uuid } from '@/lib/utils';
 
@@ -306,37 +307,37 @@ function RouteStep({ form: f, set, errors }: StepProps) {
         ⇄ Tukar asal & tujuan
       </button>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field id="f-departureDate" label="Tanggal berangkat" required error={errors.departureDate}>
+      <div className={cn('grid gap-4', f.type === 'shopping' ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+        <Field
+          id="f-departureDate"
+          label="Tanggal berangkat"
+          required={f.type === 'weight'}
+          error={errors.departureDate}
+          hint={f.type === 'shopping' ? 'Opsional' : undefined}
+        >
           <Input type="date" min={today} value={f.departureDate} onChange={(e) => set('departureDate', e.target.value)} />
         </Field>
-        <Field id="f-returnDate" label="Tanggal kembali" error={errors.returnDate} hint="Opsional">
-          <Input type="date" min={f.departureDate || today} value={f.returnDate} onChange={(e) => set('returnDate', e.target.value)} />
-        </Field>
+        {f.type === 'shopping' && (
+          <Field id="f-arrivalDate" label="Tanggal tiba" required error={errors.arrivalDate} hint="Perkiraan barang tiba">
+            <Input type="date" min={f.departureDate || today} value={f.arrivalDate} onChange={(e) => set('arrivalDate', e.target.value)} />
+          </Field>
+        )}
         <Field
           id="f-orderDeadline"
           label={f.type === 'weight' ? 'Batas terakhir titip' : 'Batas pemesanan'}
-          required
+          required={f.type === 'weight'}
           error={errors.orderDeadline}
-          hint={f.type === 'weight' ? 'Hari terakhir barang diserahkan' : 'Hari terakhir menerima pesanan'}
+          hint={f.type === 'weight' ? 'Hari terakhir barang diserahkan' : 'Opsional'}
         >
           <Input type="date" min={today} value={f.orderDeadline} onChange={(e) => set('orderDeadline', e.target.value)} />
         </Field>
       </div>
 
-      {f.type === 'weight' && (
-        <Checkbox
-          checked={f.returnLegDropOff}
-          onChange={(e) => set('returnLegDropOff', e.target.checked)}
-          label="Titipan untuk perjalanan pulang (return leg)"
-          description="Barang boleh diserahkan setelah berangkat, sebelum tanggal kembali."
-        />
-      )}
-
       {f.type === 'shopping' && (
         <Field id="f-currency" label="Mata uang listing" required hint="Default untuk produk baru.">
           <Select value={f.currency} onChange={(e) => set('currency', e.target.value as Currency)} className="sm:w-60">
             <option value="SAR">SAR (Riyal Saudi)</option>
+            <option value="AUD">AUD (Dolar Australia)</option>
             <option value="IDR">IDR (Rupiah)</option>
           </Select>
         </Field>
@@ -360,6 +361,7 @@ function CapacityStep({ form: f, set, errors, reservedKg }: StepProps & { reserv
         <Field id="f-currency" label="Mata uang" required>
           <Select value={f.currency} onChange={(e) => set('currency', e.target.value as Currency)}>
             <option value="SAR">SAR (Riyal Saudi)</option>
+            <option value="AUD">AUD (Dolar Australia)</option>
             <option value="IDR">IDR (Rupiah)</option>
           </Select>
         </Field>
@@ -440,12 +442,14 @@ function ProductsStep({ form: f, set, errors, ctx }: StepProps & { ctx?: Validat
                   <Input value={p.variant} onChange={(ev) => update(i, { variant: ev.target.value })} placeholder="cth. S / M / L" />
                 </Field>
                 <div className="grid grid-cols-[1fr_110px] gap-2">
-                  <Field id={`p-${i}-unitPrice`} label="Harga" required error={e('unitPrice')}>
+                  <Field id={`p-${i}-unitPrice`} label="Harga" error={e('unitPrice')} hint="Opsional">
                     <Input type="number" inputMode="decimal" min={0} value={p.unitPrice} onChange={(ev) => update(i, { unitPrice: ev.target.value })} />
                   </Field>
                   <Field id={`p-${i}-currency`} label="Mata uang">
-                    <Select value={p.currency} onChange={(ev) => update(i, { currency: ev.target.value as Currency })}>
+                    <Select value={p.currency} onChange={(ev) => update(i, { currency: ev.target.value as Currency | '' })}>
+                      <option value="">Opsional</option>
                       <option value="SAR">SAR</option>
+                      <option value="AUD">AUD</option>
                       <option value="IDR">IDR</option>
                     </Select>
                   </Field>
@@ -456,15 +460,27 @@ function ProductsStep({ form: f, set, errors, ctx }: StepProps & { ctx?: Validat
                 <Field id={`p-${i}-description`} label="Deskripsi singkat" hint="Opsional" className="sm:col-span-2">
                   <Textarea value={p.description} onChange={(ev) => update(i, { description: ev.target.value })} className="min-h-[64px]" maxLength={200} />
                 </Field>
-                <Field id={`p-${i}-imageUrl`} label="URL gambar" error={e('imageUrl')} hint="Opsional." className="sm:col-span-2">
-                  <Input type="url" value={p.imageUrl} onChange={(ev) => update(i, { imageUrl: ev.target.value })} placeholder="https://…" />
+                <Field id={`p-${i}-lastOrderDate`} label="Batas pesan produk" error={e('lastOrderDate')} hint="Opsional">
+                  <Input type="date" value={p.lastOrderDate} onChange={(ev) => update(i, { lastOrderDate: ev.target.value })} />
                 </Field>
+                <Field id={`p-${i}-terms`} label="Syarat & ketentuan produk" hint="Opsional. Terpisah dari S&K listing." className="sm:col-span-2">
+                  <Textarea value={p.terms} onChange={(ev) => update(i, { terms: ev.target.value })} className="min-h-[64px]" maxLength={300} />
+                </Field>
+                <div className="sm:col-span-2">
+                  <p className="mb-1.5 text-sm font-semibold text-navy">Foto atau video</p>
+                  <MediaPicker imageUrl={p.imageUrl} videoUrl={p.videoUrl} label={`Foto atau video produk ${i + 1}`} onChange={(patch) => update(i, patch)} />
+                  {e('imageUrl') && (
+                    <p role="alert" className="mt-1.5 text-[13px] font-medium text-red-600">
+                      {e('imageUrl')}
+                    </p>
+                  )}
+                </div>
               </div>
             </li>
           );
         })}
       </ol>
-      <Button variant="soft" className="w-full" onClick={() => set('products', [...f.products, emptyProduct(f.currency)])} disabled={f.products.length >= 20}>
+      <Button variant="soft" className="w-full" onClick={() => set('products', [...f.products, emptyProduct()])} disabled={f.products.length >= 20}>
         <Plus /> Tambah produk
       </Button>
       <p className="text-xs text-slate-500">
@@ -529,7 +545,13 @@ function DetailsStep({ form: f, set, errors }: StepProps) {
           <Input value={f.handoverMethod.trimStart()} onChange={(e) => set('handoverMethod', e.target.value || ' ')} maxLength={120} />
         </Field>
       )}
-      <Field id="f-terms" label="Syarat & ketentuan" required error={errors.terms} hint="Tanpa nomor telepon atau alamat.">
+      <Field
+        id="f-terms"
+        label={f.type === 'weight' ? 'Syarat & ketentuan' : 'Syarat dan ketentuan listing'}
+        required={f.type === 'weight'}
+        error={errors.terms}
+        hint={f.type === 'weight' ? 'Tanpa nomor telepon atau alamat.' : 'Opsional. Hanya tampil jika diisi. Berlaku untuk seluruh listing.'}
+      >
         <Textarea value={f.terms} onChange={(e) => set('terms', e.target.value)} maxLength={1500} />
       </Field>
       <Field id="f-coverImageUrl" label="URL foto sampul" error={errors.coverImageUrl} hint="Opsional.">
@@ -554,9 +576,9 @@ function PreviewStep({ form: f, set, errors }: StepProps) {
           <h3 className="text-lg font-bold text-navy">{p.title}</h3>
           <RouteDisplay listing={p} />
           <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-            <PreviewFact label="Berangkat" value={p.departureDate ? formatDate(p.departureDate) : '-'} />
-            <PreviewFact label="Kembali" value={p.returnDate ? formatDate(p.returnDate) : '-'} />
-            <PreviewFact label={f.type === 'weight' ? 'Batas titip' : 'Batas pesan'} value={p.orderDeadline ? formatDate(p.orderDeadline) : '-'} />
+            {p.departureDate && <PreviewFact label="Berangkat" value={formatDate(p.departureDate)} />}
+            {p.type === 'shopping' && p.arrivalDate && <PreviewFact label="Tiba" value={formatDate(p.arrivalDate)} />}
+            {p.orderDeadline && <PreviewFact label={f.type === 'weight' ? 'Batas titip' : 'Batas pesan'} value={formatDate(p.orderDeadline)} />}
             {p.type === 'weight' && (
               <>
                 <PreviewFact label="Kuota" value={formatKg(p.capacityKg)} />
@@ -572,15 +594,17 @@ function PreviewStep({ form: f, set, errors }: StepProps) {
                   <ProductThumb imageUrl={x.imageUrl} category={x.category} className="h-10 w-10 shrink-0 rounded-lg text-xl" />
                   <span className="min-w-0 flex-1 truncate font-semibold text-navy">{x.name}</span>
                   <span className="text-slate-500">stok {x.quantityAvailable}</span>
-                  <span className="font-bold text-navy">{formatMoney(x.unitPrice, x.currency)}</span>
+                  <span className="font-bold text-navy">{formatProductPrice(x, p.currency)}</span>
                 </li>
               ))}
             </ul>
           )}
           <p className="whitespace-pre-line text-sm text-slate-600">{p.description}</p>
-          <p className="whitespace-pre-line rounded-xl bg-slate-50 p-3 text-[13px] text-slate-600">
-            <b className="text-navy">S&K:</b> {p.terms}
-          </p>
+          {p.terms && (
+            <p className="whitespace-pre-line rounded-xl bg-slate-50 p-3 text-[13px] text-slate-600">
+              <b className="text-navy">S&K:</b> {p.terms}
+            </p>
+          )}
         </div>
       </div>
 

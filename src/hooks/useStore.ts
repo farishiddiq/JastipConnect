@@ -88,7 +88,7 @@ const DEFAULT_DESC = 'Titip barang, temukan perjalanan, terhubung dengan diaspor
 /** Sets document title + meta description for SPA routes. */
 export function usePageMeta(title?: string, description?: string) {
   useEffect(() => {
-    document.title = title ? `${title} · ${SITE}` : `${SITE}: Jastip Diaspora Saudi ↔ Indonesia`;
+    document.title = title ? `${title} · ${SITE}` : `${SITE}: Jastip Bagasi Saudi ↔ Indonesia`;
     let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     if (!meta) {
       meta = document.createElement('meta');

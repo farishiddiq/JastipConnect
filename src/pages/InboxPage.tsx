@@ -185,7 +185,7 @@ function ThreadItem({ thread: t, active, href }: { thread: Thread; active: boole
             {t.role === 'provider' ? 'Penitip' : 'Penyedia'} · {t.listing?.title ?? 'Listing dihapus'}
           </p>
           <div className="mt-1 flex items-center gap-2">
-            {t.inquiry && <InquiryStatusBadge status={t.inquiry.status} />}
+            {t.inquiry && <InquiryStatusBadge status={t.inquiry.status} inquiry={t.inquiry} />}
             <p className={cn('min-w-0 flex-1 truncate text-[13px]', t.unread ? 'font-semibold text-navy' : 'text-slate-500')}>{preview}</p>
             {t.unread > 0 && (
               <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-teal-700 px-1.5 text-[11px] font-bold text-white" aria-label={`${t.unread} belum dibaca`}>
