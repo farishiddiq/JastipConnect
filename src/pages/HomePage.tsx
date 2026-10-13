@@ -264,12 +264,12 @@ function HeroSearch() {
         )}
         aria-hidden={open}
       >
-        <div className="-m-10 overflow-hidden p-10">
+        <div className="pointer-events-none -m-10 overflow-hidden p-10">
           <button
             type="button"
             tabIndex={open ? -1 : 0}
             onClick={() => setOpen(true)}
-            className="group relative flex h-16 items-center gap-4 rounded-full bg-teal-500 py-1.5 pl-1.5 pr-8 text-xl font-semibold text-navy-900 shadow-lift hover:bg-teal-400 transition duration-200 ease-spring hover:scale-[1.02] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+            className={cn('pointer-events-auto group relative flex h-16 items-center gap-4 rounded-full bg-teal-500 py-1.5 pl-1.5 pr-8 text-xl font-semibold text-navy-900 shadow-lift hover:bg-teal-400 transition duration-200 ease-spring hover:scale-[1.02] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2', open && 'pointer-events-none')}
           >
             <span aria-hidden className="cta-ring pointer-events-none absolute inset-0 rounded-full bg-teal-500" />
             <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-navy text-white transition-transform duration-300 ease-spring group-hover:rotate-12">
@@ -286,14 +286,14 @@ function HeroSearch() {
           open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
         )}
       >
-        <div className="-m-10 overflow-hidden p-10">
+        <div className="pointer-events-none -m-10 overflow-hidden p-10">
           <div
             ref={panelRef}
             role="dialog"
             aria-label="Cari listing"
             hidden={!open}
             className={cn(
-              'origin-top-left rounded-3xl bg-white p-4 text-navy shadow-lift transition duration-500 ease-spring sm:max-w-md sm:p-5',
+              'pointer-events-auto origin-top-left rounded-3xl bg-white p-4 text-navy shadow-lift transition duration-500 ease-spring sm:max-w-md sm:p-5',
               open ? 'scale-100' : 'scale-90',
             )}
           >
