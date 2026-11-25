@@ -3,10 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 import { CalendarDays, CheckCircle2, MapPin, Pencil, Star, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, Tabs } from '@/components/ui/misc';
-import { Avatar, EmptyState, StarRating, VerificationLabel } from '@/components/shared/display';
+import { Avatar, EmptyState, ProBadge, StarRating, TrustMeter, VerificationLabel } from '@/components/shared/display';
 import { ReportButton } from '@/components/shared/ReportDialog';
 import { ListingGrid } from '@/components/listings/ListingCard';
-import { useCompletedCount, useCurrentUser, useDB, useListingViews, usePageMeta, useProviderRating, useUser } from '@/hooks/useStore';
+import { useCompletedCount, useCurrentUser, useDB, useListingViews, usePageMeta, usePlanState, useProviderRating, useTrust, useUser } from '@/hooks/useStore';
 import { formatDate, formatMonthYear } from '@/lib/format';
 
 export function ProviderProfilePage() {
@@ -18,6 +18,8 @@ export function ProviderProfilePage() {
   const completed = useCompletedCount(id);
   const { users } = useDB();
   const [tab, setTab] = React.useState<'active' | 'history'>('active');
+  const trust = useTrust(user);
+  const plan = usePlanState(user?.id);
 
   usePageMeta(user ? `${user.displayName}, penyedia jastip` : 'Profil tidak ditemukan', user?.bio);
 
@@ -42,8 +44,10 @@ export function ProviderProfilePage() {
           <Card className="p-6 text-center">
             <Avatar user={user} size={96} className="mx-auto" />
             <h1 className="mt-4 text-xl font-bold text-navy">{user.displayName}</h1>
-            <div className="mt-2 flex justify-center">
+            <div className="mt-2 flex flex-wrap justify-center gap-1.5">
               <VerificationLabel user={user} />
+              {plan.pro && <ProBadge />}
+              {plan.promoted && <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Jastiper Pilihan</span>}
             </div>
             <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-slate-500">
               <span className="flex items-center gap-1">
@@ -59,6 +63,7 @@ export function ProviderProfilePage() {
               <Stat value={String(completed)} label="selesai" />
               <Stat value={String(active.length)} label="aktif" />
             </div>
+            {trust && user.phoneVerifiedAt && <TrustMeter trust={trust} detailed className="mt-5 rounded-2xl bg-slate-50 p-4 text-left" />}
             <div className="mt-5 flex justify-center gap-2">
               {isMe ? (
                 <Button asChild variant="outline" size="sm">
@@ -72,7 +77,7 @@ export function ProviderProfilePage() {
             </div>
           </Card>
           <p className="px-2 text-xs leading-relaxed text-slate-400">
-            Kontak dan alamat tidak ditampilkan. {user.demoVerified ? '“Verifikasi demo” hanya label contoh.' : ''}
+            Nomor WhatsApp dan alamat tidak ditampilkan. Skor kepercayaan dihitung dari verifikasi, rating, order selesai, tiket terverifikasi, umur akun, dan laporan.
           </p>
         </aside>
 

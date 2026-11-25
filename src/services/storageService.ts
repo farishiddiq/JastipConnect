@@ -14,6 +14,8 @@ export const STORAGE_KEYS = {
   reviews: 'reviews',
   reports: 'reports',
   notifications: 'notifications',
+  purchases: 'purchases',
+  leads: 'leads',
   settings: 'settings',
 } as const;
 

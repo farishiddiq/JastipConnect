@@ -30,7 +30,7 @@ export function EditListingPage() {
   }, [listing, inquiries]);
 
   return (
-    <RequireUser reason="Pilih akun demo pemilik listing untuk mengedit.">
+    <RequireUser reason="Masuk sebagai pemilik trip untuk mengedit.">
       {(user) => {
         if (!listing || !initial) {
           return (

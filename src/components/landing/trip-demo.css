@@ -1,0 +1,307 @@
+/* Landing hero demo. Every rule is scoped to .jc-demo. */
+.jc-demo {
+  & .ss-stage {
+    --ss-accent: #16b8a6;
+    --ss-accent-soft: rgba(22, 184, 166, 0.14);
+    /* The hero card is the ground: no plate behind the phone */
+    background: transparent;
+    font-family: 'Manrope Variable', Manrope, system-ui, sans-serif;
+  }
+
+  /* Pinned one gutter from the top-left, running off the bottom */
+  .jc-demo__phone {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+  }
+
+  /* The screen content box starts under the status bar (62pt) */
+  .jc-app {
+    position: absolute;
+    inset: 0;
+    padding-top: 64px;
+    background: #f2f2f7;
+    color: #0f2742;
+  }
+
+  .jc-app__head {
+    display: grid;
+    gap: 10px;
+    padding: 10px 22px 0;
+  }
+
+  .jc-app__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .jc-app__title {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* ---- Trip card: the subject ---- */
+  .jc-trip {
+    display: grid;
+    gap: 12px;
+    margin: 18px 16px 0;
+    padding: 20px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15, 39, 66, 0.06), 0 10px 24px -12px rgba(15, 39, 66, 0.18);
+  }
+
+  .jc-trip__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .jc-trip__type {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px 5px 10px;
+    border-radius: 999px;
+    background: #eef2f7;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .jc-trip__type svg {
+    color: #0d9488;
+  }
+
+  .jc-trip__route {
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+  }
+
+  .jc-trip__arrow {
+    color: #16b8a6;
+  }
+
+  .jc-trip__kg {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .jc-trip__label {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #64748b;
+  }
+
+  .jc-trip__value {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .jc-trip__meter {
+    height: 10px;
+  }
+
+  .jc-trip__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 2px;
+  }
+
+  /* ---- Request list ---- */
+  .jc-list {
+    display: grid;
+    gap: 10px;
+    margin: 14px 16px 0;
+  }
+
+  .jc-req,
+  .jc-filler {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 20px;
+    background: #fff;
+  }
+
+  .jc-req {
+    box-shadow: 0 0 0 2px rgba(22, 184, 166, 0.35);
+  }
+
+  .jc-req__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .jc-req__name {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .jc-req__sub {
+    font-size: 15px;
+    line-height: 1.3;
+    color: #64748b;
+  }
+
+  .jc-req__btn {
+    display: inline-grid;
+    place-items: center;
+    min-width: 112px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: #16b8a6;
+    color: #062b2a;
+    font-size: 16px;
+    font-weight: 700;
+    transition: background-color 0.35s ease, color 0.35s ease, transform 0.15s ease;
+  }
+
+  .jc-req__btn[data-pressed] {
+    transform: scale(0.96);
+  }
+
+  .jc-req__btn[data-on] {
+    background: #e7f8f1;
+    color: #047857;
+  }
+
+  .jc-filler {
+    opacity: 0.9;
+  }
+
+  .jc-filler__dot {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    background: var(--ss-ink-2);
+  }
+
+  .jc-filler__lines {
+    display: grid;
+    gap: 8px;
+  }
+
+  /* ---- Banner: kept mounted so it can leave as well as arrive ---- */
+  .jc-banner {
+    position: absolute;
+    top: 56px;
+    right: 0;
+    left: 0;
+    z-index: 3;
+    transform: translateY(-140px);
+    opacity: 0;
+    transition: transform 520ms cubic-bezier(0.2, 0.9, 0.25, 1), opacity 300ms ease;
+  }
+
+  .jc-banner[data-show] {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .jc-banner .ss-notification[data-banner] {
+    position: relative;
+    top: 0;
+    animation: none;
+  }
+
+  .jc-banner__icon {
+    font-size: 14px;
+    font-weight: 800;
+    color: #062b2a;
+  }
+
+  /* ---- Satellite: the handover receipt straddling the phone's right edge ---- */
+  /* Below the request row, so the Diterima state it confirms stays visible */
+  .jc-receipt {
+    position: absolute;
+    top: 358px;
+    left: 262px;
+    display: grid;
+    gap: 2px;
+    width: 168px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: #0f2742;
+    color: #fff;
+    box-shadow: 0 18px 40px -16px rgba(15, 39, 66, 0.55);
+    transform: translateY(18px) scale(0.96);
+    opacity: 0;
+    transition: transform 620ms cubic-bezier(0.2, 0.9, 0.25, 1), opacity 360ms ease;
+  }
+
+  .jc-receipt[data-show] {
+    transform: none;
+    opacity: 1;
+  }
+
+  .jc-receipt__label {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .jc-receipt__amount {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .jc-receipt__meta {
+    font-size: 12px;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .jc-receipt__paid {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #16b8a6;
+    color: #062b2a;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+
+  /* ---- Compact (phone column) ---- */
+  & .ss-stage[data-layout='compact'] .jc-demo__phone {
+    top: 32px;
+    left: 24px;
+  }
+
+  & .ss-stage[data-layout='compact'] .jc-receipt {
+    top: 326px;
+    left: 196px;
+    width: 148px;
+    padding: 12px 14px;
+  }
+
+  & .ss-stage[data-layout='compact'] .jc-receipt__amount {
+    font-size: 22px;
+  }
+}

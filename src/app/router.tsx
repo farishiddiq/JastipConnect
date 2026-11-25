@@ -16,13 +16,22 @@ import { SavedPage } from '@/pages/SavedPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { AdminPage } from '@/pages/AdminPage';
 import { SafetyPage } from '@/pages/SafetyPage';
+import { OrdersPage } from '@/pages/OrdersPage';
+import { OrderDetailPage } from '@/pages/OrderDetailPage';
+import { TripOrdersPage } from '@/pages/TripOrdersPage';
+import { PricingPage } from '@/pages/PricingPage';
+import { ProviderDashboardPage } from '@/pages/ProviderDashboardPage';
+import { PrivacyPage, TermsPage } from '@/pages/LegalPage';
+import { CheckoutProvider } from '@/components/plans/Checkout';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 function Providers() {
   return (
     <ConfirmProvider>
       <AuthProvider>
-        <Outlet />
+        <CheckoutProvider>
+          <Outlet />
+        </CheckoutProvider>
       </AuthProvider>
     </ConfirmProvider>
   );
@@ -42,7 +51,14 @@ export const router = createBrowserRouter([
           { path: '/listings/:id/edit', element: <EditListingPage /> },
           { path: '/providers/:id', element: <ProviderProfilePage /> },
           { path: '/post', element: <CreateListingPage /> },
+          { path: '/dashboard', element: <ProviderDashboardPage /> },
           { path: '/my-listings', element: <MyListingsPage /> },
+          { path: '/my-listings/:id/orders', element: <TripOrdersPage /> },
+          { path: '/orders', element: <OrdersPage /> },
+          { path: '/orders/:id', element: <OrderDetailPage /> },
+          { path: '/harga', element: <PricingPage /> },
+          { path: '/syarat', element: <TermsPage /> },
+          { path: '/privasi', element: <PrivacyPage /> },
           { path: '/inbox', element: <InboxPage /> },
           { path: '/inbox/:conversationId', element: <ConversationPage /> },
           { path: '/saved', element: <SavedPage /> },

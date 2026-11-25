@@ -1,12 +1,16 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { PRODUCT_CATEGORIES } from '@/data/locations';
 import { toast } from 'sonner';
 import type { Currency, ShoppingListing, WeightListing } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Field, Input, Textarea } from '@/components/ui/form';
+import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ProductThumb } from '@/components/shared/display';
+import { useAuth } from '@/components/shared/AccountSwitcher';
+import { PENDING_HOLD_HOURS } from '@/lib/availability';
 import { createShoppingInquiry, createWeightInquiry } from '@/services/inquiryService';
 import { formatKg, formatMoney, formatMoneyGroups, formatProductPrice } from '@/lib/format';
 import { round2 } from '@/lib/availability';
@@ -23,11 +27,15 @@ export function WeightInquiryDialog({
   onOpenChange: (o: boolean) => void;
   listing: WeightListing;
   remaining: number;
-  buyerId: string;
+  /** Null for guests: they fill the form first and sign up on submit. */
+  buyerId: string | null;
 }) {
   const navigate = useNavigate();
+  const { requireUser } = useAuth();
   const [kg, setKg] = React.useState('');
-  const [items, setItems] = React.useState('');
+  const [rows, setRows] = React.useState<Row[]>([newRow()]);
+  const [value, setValue] = React.useState('');
+  const [ack, setAck] = React.useState(false);
   const [note, setNote] = React.useState('');
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [submitting, setSubmitting] = React.useState(false);
@@ -35,7 +43,9 @@ export function WeightInquiryDialog({
   React.useEffect(() => {
     if (open) {
       setKg('');
-      setItems('');
+      setRows([newRow()]);
+      setValue('');
+      setAck(false);
       setNote('');
       setErrors({});
     }
@@ -49,16 +59,33 @@ export function WeightInquiryDialog({
     const errs: Record<string, string> = {};
     if (!kg.trim() || !(kgNum > 0)) errs.kg = 'Isi perkiraan berat lebih dari 0 kg.';
     else if (kgNum > remaining) errs.kg = `Maksimal ${formatKg(remaining)} (sisa kuota).`;
-    if (items.trim().length < 3) errs.items = 'Jelaskan barang yang ingin dititipkan.';
+    const filled = rows.filter((r) => r.name.trim());
+    if (!filled.length) errs.items = 'Tambahkan minimal satu barang.';
+    else if (filled.some((r) => r.name.trim().length < 2 || !(Number(r.qty) >= 1))) errs.items = 'Setiap barang perlu nama dan jumlah minimal 1.';
+    const valueNum = value.trim() ? Number(value.replace(',', '.')) : undefined;
+    if (valueNum !== undefined && !(valueNum >= 0)) errs.value = 'Isi angka yang valid.';
+    if (!ack) errs.ack = 'Wajib dicentang sebelum mengirim.';
     setErrors(errs);
     if (Object.keys(errs).length) return;
-    setSubmitting(true);
-    const res = createWeightInquiry(buyerId, listing.id, { requestedKg: kgNum, itemDescription: items, note });
-    setSubmitting(false);
-    if (!res.ok) return toast.error(res.error);
-    toast.success('Inquiry terkirim', { description: 'Penyedia akan meninjau. Lanjutkan obrolan di inbox.' });
+    const send = (uid: string) => {
+      setSubmitting(true);
+      const res = createWeightInquiry(uid, listing.id, {
+        requestedKg: kgNum,
+        items: filled.map((r) => ({ name: r.name, category: r.category, qty: Math.floor(Number(r.qty)) })),
+        declaredValue: valueNum,
+        prohibitedAck: ack,
+        note,
+      });
+      setSubmitting(false);
+      if (!res.ok) return toast.error(res.error);
+      toast.success('Request terkirim', { description: `Kuota ditahan ${PENDING_HOLD_HOURS} jam sambil menunggu penyedia.` });
+      onOpenChange(false);
+      navigate(`/orders/${res.data.inquiry.id}`);
+    };
+    if (buyerId) return send(buyerId);
+    // Guests: keep the form, sign up with a magic link, then send the same request.
     onOpenChange(false);
-    navigate(`/inbox/${res.data.conversationId}`);
+    requireUser('Satu langkah lagi: masuk dengan email untuk mengirim request Anda.', send);
   };
 
   return (
@@ -66,7 +93,7 @@ export function WeightInquiryDialog({
       <DialogContent>
         <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
-            <DialogTitle>Ajukan Titipan</DialogTitle>
+            <DialogTitle>Request titipan</DialogTitle>
             <DialogDescription>
               Ajukan titipan untuk {listing.origin.city} → {listing.destination.city}. Sisa kuota {formatKg(remaining)}.
             </DialogDescription>
@@ -75,8 +102,65 @@ export function WeightInquiryDialog({
             <Field id="inq-kg" label="Perkiraan berat (kg)" required error={errors.kg} hint={`Biaya ${formatMoney(listing.pricePerKg, listing.currency)}/kg`}>
               <Input type="number" inputMode="decimal" min={0.1} step={0.1} max={remaining} value={kg} onChange={(e) => setKg(e.target.value)} placeholder="cth. 3" autoFocus />
             </Field>
-            <Field id="inq-items" label="Barang yang dititipkan" required error={errors.items} hint="Sebutkan jenis dan jumlah.">
-              <Textarea value={items} onChange={(e) => setItems(e.target.value)} maxLength={500} placeholder="cth. Kurma 2 kg, cokelat 1 kg" />
+            <fieldset>
+              <legend className="mb-1.5 text-sm font-semibold text-navy">
+                Daftar barang<span className="ml-0.5 text-red-500">*</span>
+              </legend>
+              <ul className="space-y-2">
+                {rows.map((r, idx) => (
+                  <li key={r.key} className="grid grid-cols-[1fr_72px_36px] gap-2 rounded-xl bg-slate-50 p-2 sm:grid-cols-[1fr_150px_72px_36px]">
+                    <Input
+                      aria-label={`Nama barang ${idx + 1}`}
+                      id={idx === 0 ? 'inq-item-0' : undefined}
+                      value={r.name}
+                      onChange={(e) => setRows(rows.map((x) => (x.key === r.key ? { ...x, name: e.target.value } : x)))}
+                      placeholder={idx === 0 ? 'cth. Kurma Ajwa 1 kg' : 'Nama barang'}
+                      maxLength={60}
+                      className="h-10 bg-white"
+                    />
+                    <Select
+                      aria-label={`Jenis barang ${idx + 1}`}
+                      value={r.category}
+                      onChange={(e) => setRows(rows.map((x) => (x.key === r.key ? { ...x, category: e.target.value } : x)))}
+                      className="col-span-3 row-start-2 h-10 bg-white sm:col-span-1 sm:row-start-auto"
+                    >
+                      {PRODUCT_CATEGORIES.map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </Select>
+                    <Input
+                      aria-label={`Jumlah barang ${idx + 1}`}
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      value={r.qty}
+                      onChange={(e) => setRows(rows.map((x) => (x.key === r.key ? { ...x, qty: e.target.value } : x)))}
+                      className="h-10 bg-white text-center"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setRows(rows.length > 1 ? rows.filter((x) => x.key !== r.key) : [newRow()])}
+                      aria-label={`Hapus barang ${idx + 1}`}
+                      className="flex h-10 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-white hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {rows.length < 8 && (
+                <Button size="sm" variant="ghost" className="mt-1" onClick={() => setRows([...rows, newRow()])}>
+                  <Plus /> Tambah barang
+                </Button>
+              )}
+              {errors.items && (
+                <p role="alert" className="mt-1 text-[13px] font-medium text-red-600">
+                  {errors.items}
+                </p>
+              )}
+            </fieldset>
+            <Field id="inq-value" label={`Perkiraan nilai barang (${listing.currency})`} error={errors.value} hint="Opsional. Membantu penyedia menilai risiko dan bea cukai.">
+              <Input type="number" inputMode="decimal" min={0} value={value} onChange={(e) => setValue(e.target.value)} placeholder="cth. 200" />
             </Field>
             <Field id="inq-note" label="Catatan untuk penyedia" hint="Opsional. Tanpa data pribadi.">
               <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} className="min-h-[72px]" />
@@ -85,14 +169,37 @@ export function WeightInquiryDialog({
               <span className="text-slate-500">Estimasi biaya jastip</span>
               <span className="font-extrabold text-navy">{estimate ? formatMoney(estimate, listing.currency) : '-'}</span>
             </div>
-            <p className="text-xs text-slate-400">Kuota direservasi setelah penyedia menerima. Pembayaran di luar platform.</p>
+            <div>
+              <Checkbox
+                checked={ack}
+                onChange={(e) => setAck(e.target.checked)}
+                label={
+                  <>
+                    Titipan saya tidak berisi{' '}
+                    <Link to="/safety" target="_blank" className="font-semibold text-teal-700 underline">
+                      barang terlarang
+                    </Link>
+                    , dan isinya boleh diperiksa penyedia saat serah terima.
+                  </>
+                }
+              />
+              {errors.ack && (
+                <p role="alert" className="mt-1 pl-8 text-[13px] font-medium text-red-600">
+                  {errors.ack}
+                </p>
+              )}
+            </div>
+            <p className="text-xs text-slate-500">
+              Kuota langsung ditahan {PENDING_HOLD_HOURS} jam. Berat final ditimbang saat serah terima. Bayar langsung ke penyedia setelah tagihan keluar.
+              {!buyerId && ' Anda diminta masuk dengan email saat mengirim.'}
+            </p>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Batal
             </Button>
             <Button type="submit" variant="accent" disabled={submitting}>
-              Kirim inquiry
+              {buyerId ? 'Kirim request' : 'Lanjut kirim request'}
             </Button>
           </DialogFooter>
         </form>
@@ -100,6 +207,10 @@ export function WeightInquiryDialog({
     </Dialog>
   );
 }
+
+type Row = { key: number; name: string; category: string; qty: string };
+let rowKey = 0;
+const newRow = (): Row => ({ key: ++rowKey, name: '', category: 'Makanan & Camilan', qty: '1' });
 
 export function QuantityStepper({
   value,
@@ -182,9 +293,10 @@ export function ShoppingOrderDialog({
   selection: Record<string, number>;
   onSelectionChange: (s: Record<string, number>) => void;
   remainingById: Record<string, number>;
-  buyerId: string;
+  buyerId: string | null;
 }) {
   const navigate = useNavigate();
+  const { requireUser } = useAuth();
   const [note, setNote] = React.useState('');
   const [error, setError] = React.useState<string>();
   React.useEffect(() => {
@@ -201,12 +313,17 @@ export function ShoppingOrderDialog({
     e.preventDefault();
     if (count === 0) return setError('Pilih minimal satu produk.');
     const items = Object.entries(selection).map(([productId, quantity]) => ({ productId, quantity }));
-    const res = createShoppingInquiry(buyerId, listing.id, { items, note });
-    if (!res.ok) return setError(res.error);
-    toast.success('Pesanan diajukan', { description: 'Stok baru direservasi setelah penyedia menerima.' });
-    onSelectionChange({});
+    const send = (uid: string) => {
+      const res = createShoppingInquiry(uid, listing.id, { items, note });
+      if (!res.ok) return toast.error(res.error);
+      toast.success('Pre-order terkirim', { description: `Stok ditahan ${PENDING_HOLD_HOURS} jam sambil menunggu penyedia.` });
+      onSelectionChange({});
+      onOpenChange(false);
+      navigate(`/orders/${res.data.inquiry.id}`);
+    };
+    if (buyerId) return send(buyerId);
     onOpenChange(false);
-    navigate(`/inbox/${res.data.conversationId}`);
+    requireUser('Satu langkah lagi: masuk dengan email untuk mengirim pesanan Anda.', send);
   };
 
   return (
@@ -259,7 +376,7 @@ export function ShoppingOrderDialog({
               Kembali
             </Button>
             <Button type="submit" variant="accent" disabled={count === 0}>
-              Kirim pesanan
+              {buyerId ? 'Kirim pesanan' : 'Lanjut kirim pesanan'}
             </Button>
           </DialogFooter>
         </form>

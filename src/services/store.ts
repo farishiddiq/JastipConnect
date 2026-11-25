@@ -4,6 +4,8 @@ import type {
   Inquiry,
   Listing,
   Message,
+  PartnerLead,
+  Purchase,
   Report,
   Review,
   Session,
@@ -13,7 +15,7 @@ import type {
 import * as storage from './storageService';
 import { STORAGE_KEYS, STORAGE_NAMESPACE, type StorageKey } from './storageService';
 import { buildSeed } from '@/data/seed';
-import { migrateListing, migrateReview, SCHEMA_VERSION, V2_SEED_LISTING_IDS, V2_SEED_USER_IDS } from './migrations';
+import { migrateInquiry, migrateListing, migrateReview, SCHEMA_VERSION } from './migrations';
 
 export type DBState = {
   users: User[];
@@ -25,6 +27,8 @@ export type DBState = {
   reviews: Review[];
   reports: Report[];
   notifications: AppNotification[];
+  purchases: Purchase[];
+  leads: PartnerLead[];
   settings: Settings;
 };
 
@@ -38,6 +42,8 @@ const DEFAULTS: DBState = {
   reviews: [],
   reports: [],
   notifications: [],
+  purchases: [],
+  leads: [],
   settings: { seededAt: null, demoBannerDismissed: false, saved: {} },
 };
 
@@ -47,6 +53,7 @@ function readKey<K extends keyof DBState>(key: K): DBState[K] {
   const validate = key === 'session' || key === 'settings' ? storage.isObject : storage.isArray;
   const value = storage.read<DBState[K]>(key as StorageKey, DEFAULTS[key], validate);
   if (key === 'listings') return (value as Listing[]).map(migrateListing) as DBState[K];
+  if (key === 'inquiries') return (value as Inquiry[]).map(migrateInquiry) as DBState[K];
   if (key === 'reviews') return (value as Review[]).map(migrateReview).filter((r): r is Review => r !== null) as DBState[K];
   if (key === 'settings') {
     const s = value as Settings;
@@ -99,20 +106,21 @@ function seedIfNeeded() {
   persist('settings', { ...readKey('settings'), seededAt: new Date().toISOString(), schemaVersion: SCHEMA_VERSION });
 }
 
-/** Brings older localStorage data up to the current schema once. User-created data is preserved. */
+/**
+ * Brings older localStorage data up to the current schema once.
+ * v4 replaced the demo dataset (roles no longer overlap, one month of activity),
+ * so any older namespace is cleared and re-seeded a single time.
+ */
 function migrateIfNeeded() {
   const settings = readKey('settings');
   if ((settings.schemaVersion ?? 1) >= SCHEMA_VERSION) return;
-  const listings = readKey('listings'); // already normalised by readKey
-  const users = readKey('users');
-  const seed = buildSeed();
-  const newListings = seed.listings.filter((l) => V2_SEED_LISTING_IDS.includes(l.id) && !listings.some((x) => x.id === l.id));
-  const newUsers = seed.users.filter((u) => V2_SEED_USER_IDS.includes(u.id) && !users.some((x) => x.id === u.id));
-  persist('listings', [...listings, ...newListings]);
-  persist('users', [...users, ...newUsers]);
-  persist('reviews', readKey('reviews'));
-  persist('settings', { ...settings, schemaVersion: SCHEMA_VERSION });
+  storage.clearNamespace();
+  seedIfNeeded();
+  migratedDemo = true;
 }
+
+/** True when this load replaced an older demo dataset (shown once as a toast). */
+export let migratedDemo = false;
 
 export function initStore() {
   if (initialized) return;

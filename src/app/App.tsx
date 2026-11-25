@@ -2,8 +2,9 @@ import * as React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 import { router } from './router';
-import { store, storageAvailable } from '@/services/store';
+import { migratedDemo, store, storageAvailable } from '@/services/store';
 import { useDB } from '@/hooks/useStore';
+import { sweepExpiredHolds } from '@/services/inquiryService';
 
 export function App() {
   const theme = useDB().settings.theme ?? 'system';
@@ -20,7 +21,15 @@ export function App() {
         duration: 8000,
       });
     }
+    if (migratedDemo) toast.info('Data demo diperbarui', { description: '5 provider, 10 klien, dan aktivitas 1 bulan. Masuk lewat Akun demo di footer.' });
     return store.onError((msg) => toast.error(msg));
+  }, []);
+
+  // Release expired quota holds on load and every minute while the app is open.
+  React.useEffect(() => {
+    sweepExpiredHolds();
+    const t = window.setInterval(() => sweepExpiredHolds(), 60_000);
+    return () => window.clearInterval(t);
   }, []);
 
   return (

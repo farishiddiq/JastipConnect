@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" font-family="Manrope, Arial, sans-serif">
+  <rect width="640" height="300" rx="24" fill="#f8fafc"/>
+  <rect x="16" y="16" width="608" height="268" rx="18" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+  <rect x="16" y="16" width="608" height="56" rx="18" fill="#0f2742"/>
+  <rect x="16" y="52" width="608" height="20" fill="#0f2742"/>
+  <text x="40" y="52" fill="#ffffff" font-size="20" font-weight="700">BOARDING PASS (CONTOH)</text>
+  <text x="40" y="112" fill="#64748b" font-size="13">PENUMPANG</text>
+  <text x="40" y="136" fill="#0f2742" font-size="20" font-weight="700">NAMA DISAMARKAN</text>
+  <text x="40" y="184" fill="#64748b" font-size="13">DARI</text>
+  <text x="40" y="222" fill="#0f2742" font-size="40" font-weight="800">RUH</text>
+  <text x="200" y="184" fill="#64748b" font-size="13">KE</text>
+  <text x="200" y="222" fill="#0f2742" font-size="40" font-weight="800">CGK</text>
+  <path d="M140 208h40" stroke="#16b8a6" stroke-width="3" stroke-dasharray="6 6"/>
+  <text x="340" y="112" fill="#64748b" font-size="13">PENERBANGAN</text>
+  <text x="340" y="136" fill="#0f2742" font-size="20" font-weight="700">XX 820</text>
+  <text x="340" y="184" fill="#64748b" font-size="13">BAGASI</text>
+  <text x="340" y="212" fill="#0f2742" font-size="20" font-weight="700">2 x 23 KG</text>
+  <line x1="480" y1="88" x2="480" y2="268" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 6"/>
+  <g fill="#0f2742">
+    <rect x="504" y="100" width="6" height="150"/><rect x="516" y="100" width="3" height="150"/><rect x="525" y="100" width="8" height="150"/>
+    <rect x="539" y="100" width="3" height="150"/><rect x="548" y="100" width="6" height="150"/><rect x="560" y="100" width="3" height="150"/>
+    <rect x="569" y="100" width="8" height="150"/><rect x="583" y="100" width="4" height="150"/><rect x="593" y="100" width="6" height="150"/>
+  </g>
+  <text x="40" y="262" fill="#94a3b8" font-size="12">Data pribadi disamarkan. Hanya moderator yang melihat bukti asli.</text>
+</svg>

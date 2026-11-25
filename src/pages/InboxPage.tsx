@@ -8,9 +8,9 @@ import { Tabs } from '@/components/ui/misc';
 import { Avatar, EmptyState, InquiryStatusBadge } from '@/components/shared/display';
 import { RequireUser } from '@/components/layout/Guards';
 import { InquiryPanel } from '@/components/messaging/InquiryPanel';
-import { useDB, usePageMeta } from '@/hooks/useStore';
+import { useDB, useMode, usePageMeta } from '@/hooks/useStore';
 import { markConversationRead, MAX_MESSAGE_LENGTH, sendMessage } from '@/services/messagingService';
-import { switchAccount } from '@/services/userService';
+import { setMode, switchAccount } from '@/services/userService';
 import { formatDate, formatRelative, formatTime } from '@/lib/format';
 import { toDateKey } from '@/lib/dates';
 import { cn } from '@/lib/utils';
@@ -19,7 +19,7 @@ type TabKey = 'all' | 'pending' | 'accepted' | 'completed';
 const TAB_FILTER: Record<TabKey, (s: InquiryStatus) => boolean> = {
   all: () => true,
   pending: (s) => s === 'pending',
-  accepted: (s) => s === 'accepted',
+  accepted: (s) => ['accepted', 'handed_over', 'shipped', 'delivered'].includes(s),
   completed: (s) => s === 'completed',
 };
 
@@ -35,11 +35,13 @@ type Thread = {
 
 export function InboxPage() {
   usePageMeta('Inbox');
-  return <RequireUser reason="Pilih akun demo untuk membuka inbox.">{(user) => <Inbox me={user} />}</RequireUser>;
+  return <RequireUser reason="Masuk untuk membuka inbox.">{(user) => <Inbox me={user} />}</RequireUser>;
 }
 
+/** Threads for the active mode: provider mode shows requests to me, client mode shows my requests. */
 function useThreads(me: User): Thread[] {
   const { conversations, inquiries, listings, users, messages } = useDB();
+  const mode = useMode();
   return React.useMemo(() => {
     const byConv = new Map<string, Message[]>();
     for (const m of messages) {
@@ -61,8 +63,9 @@ function useThreads(me: User): Thread[] {
           role: inquiry?.providerId === me.id ? 'provider' : 'buyer',
         } satisfies Thread;
       })
+      .filter((t) => (mode === 'provider' ? t.role === 'provider' : t.role === 'buyer'))
       .sort((a, b) => (b.last?.createdAt ?? b.conversation.createdAt).localeCompare(a.last?.createdAt ?? a.conversation.createdAt));
-  }, [conversations, inquiries, listings, users, messages, me.id]);
+  }, [conversations, inquiries, listings, users, messages, me.id, mode]);
 }
 
 function Inbox({ me }: { me: User }) {
@@ -79,6 +82,17 @@ function Inbox({ me }: { me: User }) {
   const count = (k: TabKey) => scoped.filter((t) => t.inquiry && TAB_FILTER[k](t.inquiry.status)).length;
   const active = threads.find((t) => t.conversation.id === conversationId);
   const qs = params.toString() ? `?${params.toString()}` : '';
+  const { conversations, inquiries } = useDB();
+
+  // Deep links (notifications, order page) may point to a thread from the other mode: switch to it.
+  React.useEffect(() => {
+    if (!conversationId || active) return;
+    const conv = conversations.find((c) => c.id === conversationId && c.participantIds.includes(me.id));
+    const inq = conv && inquiries.find((i) => i.id === conv.inquiryId);
+    if (!inq) return;
+    if (inq.providerId === me.id && me.phoneVerifiedAt) setMode('provider');
+    else if (inq.buyerId === me.id) setMode('client');
+  }, [conversationId, active, conversations, inquiries, me.id, me.phoneVerifiedAt]);
 
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
@@ -95,7 +109,9 @@ function Inbox({ me }: { me: User }) {
           aria-label="Daftar percakapan"
         >
           <div className="space-y-3 border-b border-border p-4">
-            <h1 className="text-xl font-bold text-navy">Inbox</h1>
+            <h1 className="text-xl font-bold text-navy">
+              Inbox <span className="text-sm font-semibold text-slate-400">· {useMode() === 'provider' ? 'sebagai provider' : 'sebagai klien'}</span>
+            </h1>
             {filterListing && (
               <div className="flex items-center gap-2 rounded-xl bg-teal-50 py-1.5 pl-3 pr-1 text-[13px] text-teal-900 ring-1 ring-teal-200">
                 <span className="min-w-0 flex-1 truncate">
@@ -112,13 +128,13 @@ function Inbox({ me }: { me: User }) {
               </div>
             )}
             <Tabs
-              label="Filter status inquiry"
+              label="Filter status order"
               value={tab}
               onChange={(v) => setParam('tab', v === 'all' ? null : v)}
               items={[
                 { value: 'all', label: 'Semua' },
                 { value: 'pending', label: 'Menunggu', count: count('pending') },
-                { value: 'accepted', label: 'Diterima', count: count('accepted') },
+                { value: 'accepted', label: 'Berjalan', count: count('accepted') },
                 { value: 'completed', label: 'Selesai' },
               ]}
             />
@@ -129,7 +145,7 @@ function Inbox({ me }: { me: User }) {
                 <EmptyState
                   icon={<MessageCircle />}
                   title="Belum ada percakapan"
-                  description={tab === 'all' ? 'Inquiry Anda muncul di sini.' : 'Tidak ada inquiry dengan status ini.'}
+                  description={tab === 'all' ? 'Chat untuk setiap request muncul di sini. Ganti mode Klien/Provider untuk melihat sisi lainnya.' : 'Tidak ada order dengan status ini.'}
                   action={
                     <Button asChild variant="outline" size="sm">
                       <Link to="/explore">Jelajahi listing</Link>
@@ -154,7 +170,7 @@ function Inbox({ me }: { me: User }) {
             )
           ) : (
             <div className="flex h-full items-center justify-center p-8">
-              <EmptyState icon={<MessageCircle />} title="Pilih percakapan" description="Percakapan terhubung ke satu inquiry." className="max-w-sm border-0" />
+              <EmptyState icon={<MessageCircle />} title="Pilih percakapan" description="Setiap percakapan terhubung ke satu order." className="max-w-sm border-0" />
             </div>
           )}
         </section>
@@ -182,7 +198,7 @@ function ThreadItem({ thread: t, active, href }: { thread: Thread; active: boole
             <span className="shrink-0 text-[11px] text-slate-400">{t.last ? formatRelative(t.last.createdAt) : ''}</span>
           </div>
           <p className="truncate text-xs text-slate-500">
-            {t.role === 'provider' ? 'Penitip' : 'Penyedia'} · {t.listing?.title ?? 'Listing dihapus'}
+            {t.role === 'provider' ? 'Klien' : 'Penyedia'} · {t.listing?.title ?? 'Listing dihapus'}
           </p>
           <div className="mt-1 flex items-center gap-2">
             {t.inquiry && <InquiryStatusBadge status={t.inquiry.status} inquiry={t.inquiry} />}
@@ -205,7 +221,7 @@ function NoAccess({ backHref }: { backHref: string }) {
       <EmptyState
         icon={<Lock />}
         title="Percakapan tidak tersedia"
-        description="Bukan peserta percakapan ini. Ganti akun demo."
+        description="Percakapan ini bukan milik Anda, atau ada di mode lain (Klien/Provider)."
         action={
           <Button asChild variant="outline">
             <Link to={backHref}>Kembali ke inbox</Link>
@@ -250,7 +266,8 @@ function ThreadView({ thread: t, me, backHref }: { thread: Thread; me: User; bac
 
   const switchToOther = () => {
     if (!t.other) return;
-    switchAccount(t.other.id);
+    // Demo helper: the other side replies in the mode that matches their role in this order.
+    switchAccount(t.other.id, t.role === 'provider' ? 'client' : 'provider');
     toast.success(`Sekarang sebagai ${t.other.displayName} (demo)`);
   };
 
@@ -274,7 +291,7 @@ function ThreadView({ thread: t, me, backHref }: { thread: Thread; me: User; bac
           <Avatar user={t.other} size={40} />
           <div className="min-w-0">
             <p className="truncate font-bold text-navy">{t.other?.displayName ?? 'Pengguna'}</p>
-            <p className="truncate text-xs text-slate-500">{t.role === 'provider' ? 'Penitip / pembeli' : 'Penyedia'} · {t.other?.city ?? '-'}</p>
+            <p className="truncate text-xs text-slate-500">{t.role === 'provider' ? 'Klien' : 'Penyedia'} · {t.other?.city ?? '-'}</p>
           </div>
         </Link>
         <Button variant="outline" size="sm" onClick={switchToOther} title="Mode demo: beralih ke akun lawan bicara untuk membalas">

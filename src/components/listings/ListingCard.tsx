@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, Clock, Plane, ShoppingBag } from 'lucide-react';
+import { Bookmark, Clock, Plane, ShoppingBag, Sparkles, Ticket } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ListingView } from '@/hooks/useStore';
 import { useSavedIds } from '@/hooks/useStore';
@@ -19,7 +19,7 @@ export function SaveButton({ listingId, className, withLabel }: { listingId: str
   const onClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const uid = requireUser('Pilih akun demo untuk menyimpan listing.');
+    const uid = requireUser('Masuk untuk menyimpan trip.');
     if (!uid) return;
     const res = toggleSaved(uid, listingId);
     if (!res.ok) return toast.error(res.error);
@@ -48,7 +48,7 @@ export function AvailabilityMeter({ view, className }: { view: ListingView; clas
   const pct = Math.min(100, Math.round(a.ratio * 100));
   const label =
     a.type === 'weight'
-      ? `Sisa ${formatKg(a.remaining)} dari ${formatKg(a.total)}`
+      ? `Sisa ${formatKg(a.remaining)} dari ${formatKg(a.total)}${a.held > 0 ? ` · ${formatKg(a.held)} ditahan` : ''}`
       : a.remaining > 0
         ? `${a.productsLeft} produk tersedia`
         : 'Semua produk habis';
@@ -128,6 +128,20 @@ export function ListingCard({ view, showViews, compact }: { view: ListingView; s
           )}
         </div>
         <div className={cn('flex-1', compact ? 'px-1 pb-3 pt-2.5' : 'px-1 pb-4 pt-3.5')}>
+          {(view.featuredUntil || view.tripVerified) && !muted && (
+            <p className={cn('mb-1 flex flex-wrap gap-1.5 font-semibold', compact ? 'text-[10px]' : 'text-[11px]')}>
+              {view.featuredUntil && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-800">
+                  <Sparkles className="h-3 w-3" aria-hidden /> Unggulan
+                </span>
+              )}
+              {view.tripVerified && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-800">
+                  <Ticket className="h-3 w-3" aria-hidden /> Tiket terverifikasi
+                </span>
+              )}
+            </p>
+          )}
           <h3 className={cn('line-clamp-1 font-semibold text-navy', compact ? 'text-sm' : 'text-base')}>
             <Link to={`/listings/${l.id}`} className="after:absolute after:inset-0 focus-visible:outline-none">
               {listingTitle(l)}
@@ -154,6 +168,11 @@ export function ListingCard({ view, showViews, compact }: { view: ListingView; s
           </div>
           <div className="flex items-baseline justify-between gap-2">
             <span className={cn('truncate text-slate-500', compact ? 'text-[11px]' : 'text-xs')}>{l.origin.city} → {l.destination.city}</span>
+            {view.availability.type === 'weight' && view.status === 'open' && (
+              <span className={cn('num shrink-0 font-semibold text-navy', compact ? 'text-[11px]' : 'text-xs')} aria-label={`Sisa ${formatKg(view.availability.remaining)}`}>
+                sisa {formatKg(view.availability.remaining)}
+              </span>
+            )}
           </div>
           <PriceLabel view={view} className={cn('!text-teal-700 [&_.num]:font-bold', compact ? 'text-xs [&_.num]:text-sm [&_span]:text-xs' : '[&_.num]:text-base')} />
         </div>

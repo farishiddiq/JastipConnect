@@ -1,14 +1,14 @@
 # JastipConnect
 
-**Titip barang, temukan perjalanan, terhubung dengan diaspora.**
+**Bawa rumah lebih dekat, lewat bagasi sesama diaspora.**
 
-JastipConnect is a demo of a jastip (personal-courier) marketplace for the Indonesian diaspora, with two corridors: Saudi Arabia ↔ Indonesia and Australia ↔ Indonesia. Each direction is its own listing. It's a mobile-first web app with two listing types:
+JastipConnect is a demo of a jastip marketplace (think eBay, Kaskus, Gumtree) for the Indonesian diaspora, with two corridors: Saudi Arabia ↔ Indonesia and Australia ↔ Indonesia. Each direction is its own listing. It's a mobile-first web app with two listing types:
 
-- **Jastip Bagasi (by weight):** a traveler posts a route, dates, spare baggage (kg), a fee per kg, and a last drop-off date. Buyers ask about sending items by giving an estimated weight.
-- **Jastip Belanja (by item):** a personal shopper posts a catalog of products. Arrival date is required; departure date, order deadline, and the product's price, currency, description, last order date, photo/video and terms are all optional. Items without a price show "Tanya harga". Buyers order products by quantity.
+- **Jastip Bagasi (primary, by weight):** a traveler posts a route, dates, spare baggage (kg), a fee per kg, and a last drop-off date. Clients request space with an estimated weight; the provider weighs the items at handover.
+- **Jastip Barang (secondary, by item, formerly "Jastip Belanja"):** a personal shopper posts a pre-order catalog. Arrival date is required; everything else per product is optional. Items without a price show "Tanya harga".
 
-The app is built with React, TypeScript, Vite, Tailwind CSS, and shadcn-style components (Radix primitives). It uses lucide-react icons, React Router, and sonner for toasts.
-**All data lives in the browser's `localStorage`. There is no backend.**
+The app is built with React, TypeScript, Vite, Tailwind CSS, and shadcn-style components (Radix primitives). It uses lucide-react icons, React Router, and sonner for toasts. The landing hero demo is built with the [stageshow](https://github.com/benjitaylor/skills) kit (copied to `src/stageshow/kit`, MIT).
+**All data lives in the browser's `localStorage`. There is no backend.** Magic-link email, WhatsApp OTP, notifications, holds and payments are simulated.
 
 ---
 
@@ -27,27 +27,51 @@ npm run preview   # serve the dist/ build
 
 ---
 
+## Day 0 feature set (22 features, all free)
+
+| Clients (9) | Providers (10) | Both (3) |
+|---|---|---|
+| Browse and search listings | Sign-up (WhatsApp OTP) before posting | Log in / log out (magic link) |
+| Live kg left on each listing | Post a trip or pre-order | Profile and account settings |
+| Structured request form | Shareable WhatsApp link + PNG trip card | Terms and privacy at sign-up |
+| Sign-up at first request (form first, magic link on submit) | Live quota with expiring holds | |
+| Order tracking page (`/orders/:id`) | Request inbox: accept or decline (`/orders`) | |
+| Amount due and payment-proof upload | Order sheet per trip, unlimited, CSV export | |
+| Notifications on every update | Handover record: weight and photo | |
+| Star rating after delivery | Payment tracker (records only) | |
+| Report a listing or user | One-tap shipped and delivered; ratings and reports | |
+
+One account has two modes, **Klien** and **Provider**, switched from the header. Provider mode has its own dark navy header with a PROVIDER label and lands on `/dashboard`; client mode keeps the light marketplace header and shows active orders on the home page. Provider mode needs a verified WhatsApp number and the provider terms. Inbox and order lists follow the active mode.
+
 ## 5-minute demo flow
 
-1. Open `/`. You're browsing as a guest. Search for **Riyadh**, or pick the popular route **Riyadh → Jakarta**.
-2. Open the listing **"Bagasi kosong Riyadh → Jakarta, 20 kg"** and click **Tanya Provider**. As a guest, you'll be asked to pick a demo account. Choose **Aisyah**.
-3. Fill in the inquiry (for example, 4 kg). You're taken to the conversation in the Inbox.
-4. Click **"Balas sebagai Ahmad"** in the chat header to switch to the provider account. Click **Terima** and the quota drops from 15 kg to 11 kg. Send a message.
-5. Click **Tandai selesai** as Ahmad. Switch back to Aisyah and click **Konfirmasi selesai**. Then click **Beri penilaian** to give a 1 to 5 star rating (one rating per transaction, no free-text comments).
-6. As **Ahmad**, go to `/post` → Jastip Bagasi. Fill in the wizard and publish. Refresh the page and the listing is still there.
-7. Open a listing that isn't yours, click **Laporkan**, then switch to **Admin Demo** and go to `/admin` to moderate it.
-8. Go to `/profile` → **Reset Data Demo** to restore the initial data.
+1. Open `/listings/l-d2` (Sydney → Jakarta) while signed out. Click **Request titipan**, fill in the weight and items, then **Lanjut kirim request**. Sign up with any email: click **Buka link masuk** in the simulated inbox, enter a name and accept the terms. You land on the order's tracking page; the kg is held for 24 hours.
+2. Footer → **Akun demo** → **Ahmad Fauzi**. You land on his provider dashboard. Under **Perlu tindakan**: answer Budi's request, check Aisyah's payment proof (**Tandai lunas**), then mark Yusuf's order **Dikirim**.
+3. **Trip saya** → **Order sheet** on "Bagasi kosong 20 kg" lists every order on the trip, with totals and CSV export. **Bagikan** makes the WhatsApp text and the PNG trip card.
+4. Switch to **Aisyah**: the home page opens with her active orders. Open the Sydney order (Sampai) → **Sudah diterima** → rate Dewi.
+5. Switch to **Andi Wijaya** (free plan, 1 active pre-order): publishing his draft trip is blocked until he buys a **Slot listing** or Pro.
+6. `/harga` shows every plan. Switch to **Admin Demo** → `/admin`: reports, ticket verification (Siti's Makassar trip is waiting), partnership leads, simulated revenue (Rp922.000 this month).
+7. `/profile` → **Reset Data Demo** restores the seed.
 
-### Demo accounts (no password)
+### Demo accounts (switcher in the footer, no password)
 
-| Account | Role |
-|---|---|
-| Aisyah Putri | Buyer in Jakarta |
-| Ahmad Fauzi | Baggage (weight) provider in Riyadh |
-| Nadia Rahma | Shopping provider in Jeddah |
-| Admin Demo | Demo moderator (`/admin`) |
+Roles never overlap: providers only post trips, clients only order. The data covers one month: the last 30 days of orders plus trips departing in the next 6 weeks. Every order's dates agree with its trip (handover before drop-off, shipped after departure) and no trip is overbooked.
 
-The seed data also includes Siti, Rizky, and Budi, so the marketplace looks lived-in. You can pick these accounts too. You can also create a new local profile (name and city only).
+**Providers (5)**, all WhatsApp-verified:
+
+| Account | Listings | Plan |
+|---|---|---|
+| Ahmad Fauzi · Riyadh | Bagasi RUH→CGK (done), RUH→CGK (+12 days, boosted), CGK→RUH (+40 days, ticket rejected) | Pro (renewed) |
+| Nadia Rahma · Jeddah | Jastip Barang: kurma & cokelat (boosted), fashion & attar (done), oleh-oleh umrah | Pro + Promoted |
+| Siti Maryam · Madinah | Bagasi MED→CGK (in transit), MED→UPG (+6 days, ticket pending) | Block of 5 slots |
+| Dewi Lestari · Sydney | Bagasi SYD→CGK (done), SYD→CGK (+20 days), CGK→SYD (+45 days, paid slot) | Promoted + 1 slot |
+| Andi Wijaya · Melbourne | Jastip Barang: produk Australia; one draft trip | Free, at its limit |
+
+**Clients (10):** Aisyah Putri (Jakarta, most active), Budi Santoso (Bandung), Rizky Pratama (Surabaya), Fatimah Zahra (Riyadh), Hendra Gunawan (Sydney), Maya Sari (Makassar), Yusuf Hakim (Medan), Lestari Wulandari (Yogyakarta), Rahmat Hidayat (Semarang, new), Nurul Huda (Perth).
+
+**Moderator:** Admin Demo (`/admin`).
+
+Totals: 37 orders in every stage (7 pending with live holds, 7 accepted, 4 handed over, 1 shipped, 2 delivered, 10 completed, 2 declined, 2 cancelled, 2 expired), 10 ratings, 3 reports, 2 partnership leads, 10 plan purchases. Each account has an `@demo.jastip.id` email for the magic-link login (for example `aisyah@demo.jastip.id`).
 
 ---
 
@@ -55,66 +79,63 @@ The seed data also includes Siti, Rizky, and Budi, so the marketplace looks live
 
 | Route | Page | Access |
 |---|---|---|
-| `/` | Home: hero search, categories, featured & new listings, how it works, safety, CTA | Public |
-| `/explore` | Search + filters (synced to the URL query string) | Public |
-| `/listings/:id` | Listing detail (buyer CTA or owner actions) | Public |
-| `/providers/:id` | Public provider profile + star ratings | Public |
-| `/post` | Pick a type → listing wizard | Member |
+| `/` | Landing: diaspora hero with stageshow demo, Bagasi-first tiles, Jastiper Pilihan (promoted), how it works, trust | Public |
+| `/explore` | Search + filters (synced to the URL query string). Boosted trips and promoted providers sort first among open listings | Public |
+| `/listings/:id` | Listing detail. Guests can open the request form | Public |
+| `/providers/:id` | Public profile, trust score, ratings | Public |
+| `/dashboard` | Provider home: KPIs, "Perlu tindakan" queue, active trips, reputation, plan. `/` redirects here in provider mode | Provider |
+| `/orders` | Client: my orders. Provider: request inbox | Member |
+| `/orders/:id` | Order tracking: timeline, handover, bill, payment proof, actions | Order participant |
+| `/post` | Pick a type → wizard (free-plan limit banner) | Provider |
 | `/listings/:id/edit` | Edit / continue a draft | Owner |
-| `/my-listings` | Active / Full / Closed / Draft tabs, metrics | Member |
-| `/inbox`, `/inbox/:conversationId` | Two-pane inbox + inquiry actions | Participant |
-| `/saved` | Saved listings | Member |
-| `/profile` | Profile, account switcher, **Reset Data Demo** | Member (reset is open to everyone) |
-| `/admin` | Moderation dashboard | Admin Demo |
+| `/my-listings` | Trip saya: tabs, share, ticket verification, boost, plan panel | Provider |
+| `/my-listings/:id/orders` | Order sheet per trip (unlimited, CSV) | Provider (owner) |
+| `/inbox`, `/inbox/:conversationId` | Chat per order, filtered by mode | Participant |
+| `/harga` | Pricing, simulated checkout, brand-partnership form | Public |
+| `/syarat`, `/privasi` | Terms and privacy (draft, needs legal review) | Public |
+| `/saved`, `/profile` | Saved listings; profile, mode, provider plan and purchase history | Member |
+| `/admin` | Reports, ticket proofs, leads, revenue | Admin Demo |
 | `/safety` | Prohibited items, rules, demo limitations | Public |
-| `*` | 404 | Public |
-
-Filters on `/explore` live in the query string (`q`, `type`, `oc`, `ocity`, `dc`, `dcity`, `from`, `to`, `all`, `cur`, `pmin`, `pmax`, `sort`). For example, `/explore?oc=SA&ocity=Riyadh&dc=ID&dcity=Jakarta` is a shareable link.
 
 ---
 
 ## Business rules
 
-- **Weight listing quota:** remaining = total kg − the kg in **accepted + completed** inquiries. Pending, declined, and cancelled inquiries don't use up quota. Acceptance re-checks the quota against the latest data, so you can't accept more than what's left.
-- **Shopping listing stock:** stock is reserved only when an order is **accepted**. The app prevents overselling. A product shows **Sold Out** when its stock runs out, and when every product is out the listing becomes `Full`.
-- **Derived status:** `draft` → `closed` (closed manually or by the admin) → `expired` (past the drop-off/order deadline) → `full` → `open`. A manually closed listing is **never reopened automatically** when quota frees up.
-- **Edit limits:** capacity or stock can't go below what's already accepted. A product with active orders can't be removed.
-- **Bagasi is one-way.** No return date or return trip. A provider who travels both ways posts two independent listings.
-- **Default order:** dated departures first (earliest first, ties by last drop-off or order date), then listings without a departure date by arrival date. Missing dates sort last and are never invented.
-- **Inquiry stages:** `Menunggu` → `Diterima` (shown as `Berlangsung`, or `Menunggu konfirmasi` once one side has confirmed) → `Selesai`; also `Ditolak` and `Dibatalkan`. Payment is arranged off-platform.
-- **Completion:** both buyer and provider must confirm. Only a completed transaction can be rated, and only by the buyer, once, with 1 to 5 stars.
-- **Cancellation:** the buyer can cancel a pending or accepted inquiry. Cancelling releases the reserved quota or stock.
-- **Admin:** can close (unpublish) a reported listing. The owner can't reopen it until the admin lifts the block.
+- **Order lifecycle:** `pending` → `accepted` → `handed_over` → `shipped` → `delivered` → `completed`, or `declined` / `cancelled` / `expired`. Every transition posts a system message in the chat and a notification to the other side.
+- **Holds:** a pending request holds its kg (or stock) for 24 hours; unanswered, it expires. An accepted Bagasi request holds until the drop-off deadline; not handed over by then, it expires. `sweepExpiredHolds()` runs on load and every minute.
+- **Quota:** remaining kg = capacity − kg of pending (live hold) and accepted-or-later orders. After handover the weighed kg replaces the estimate. Accept and handover re-check against the latest data.
+- **Handover** needs a photo (and weight for Bagasi) and sets the amount due. **Payment** is records only: the client uploads proof, the provider marks it paid. Shipping before paid is allowed with a warning.
+- **Completion:** the provider marks delivered, the client confirms receipt. Only completed orders can be rated, once, 1 to 5 stars.
+- **Cancellation:** the client can cancel before handover.
+- **Free plan:** 1 active (open or full) trip at a time. Pro removes the limit. Extra trips use slot credits (Rp50.000 each, or 5 for Rp200.000); a listing that used a credit keeps it (`paidSlot`). Orders are never capped.
+- **Plans (simulated):** Featured trip Rp25.000 / 7 days, Slot Rp50.000, Block 5 Rp200.000, Pro Rp99.000 / 30 days, Promoted Rp150.000 / 30 days, Brand partnership by negotiation (lead form). Buying an active plan again extends it.
+- **Anti-scam:** WhatsApp OTP before posting; per-trip ticket proof reviewed by a moderator for the "Trip terverifikasi" badge; trust score (0 to 100) from WhatsApp, ratings, completed orders, verified trips, account age, minus reports; reports on listings and users.
+- **Admin:** closes reported listings, approves or rejects ticket proofs, tracks leads and simulated revenue.
 
 ---
 
 ## localStorage contract
 
-Versioned namespace `jc:v1:`, with `settings.schemaVersion` (currently 2). Older data is migrated once on load: round-trip fields are dropped, belanja gets an arrival date, zero prices become unpriced, review comments are discarded, and the Australia demo data is merged in by id without touching user-created data.
+Versioned namespace `jc:v1:`, with `settings.schemaVersion` (currently 5). v4 replaced the demo dataset (separate roles, one month of activity), so data from an older version is cleared and re-seeded once on load, with a toast. Within v4, reloading never overwrites what you create.
 
-`jc:v1:users`, `jc:v1:session`, `jc:v1:listings`, `jc:v1:inquiries`, `jc:v1:conversations`, `jc:v1:messages`, `jc:v1:reviews`, `jc:v1:reports`, `jc:v1:notifications`, `jc:v1:settings` (includes the per-user saved list and a seed marker).
+`jc:v1:users`, `session` (includes `mode`), `listings`, `inquiries` (orders), `conversations`, `messages`, `reviews`, `reports`, `notifications`, `purchases`, `leads`, `settings`.
 
-- **Seeds only on the first visit** (`settings.seededAt`). Reloading never overwrites data you created.
+- **Seeds only on the first visit.** Reloading never overwrites data you created.
 - Reads use a safe JSON parse with shape validation and fall back to defaults. Writes catch the quota-exceeded error and show a toast. If `localStorage` isn't available, the app runs in memory and shows a warning.
-- Multi-collection changes, such as an inquiry plus its conversation, message, and notification, are written in one transaction and rolled back if a write fails.
+- Multi-collection changes are written in one transaction and rolled back if a write fails.
 - Changes in other tabs sync through the `storage` event.
-- **Reset Data Demo** (`/profile`) clears the namespace and re-seeds it after a confirmation.
 
 ---
 
 ## What's simulated (and what isn't)
 
-The app shows these limits in a demo banner, on `/safety#demo`, and in microcopy near the relevant features.
-
-- **No real login.** The account switcher is a demo with no password. Access checks (owner, participant, admin) run in the app only and are **not a security boundary**.
-- **Not multi-user.** `localStorage` is per browser and device. "Chatting between accounts" only works by switching accounts in the same browser. There's no real-time messaging, push notifications, email, SMS, or WhatsApp.
-- **No payments.** No escrow, payment gateway, or fees. The **Promosikan Listing** panel is a "Segera Hadir" (coming soon) preview and can't be purchased.
-- **No identity verification.** The "Verifikasi demo" (demo verification) label is cosmetic. Other users show "Belum diverifikasi" (not yet verified).
-- **No currency conversion.** Prices are shown in SAR, AUD or IDR as listed. Sorting by price groups listings by currency.
-- **Not legal advice.** The prohibited-items list is a non-exhaustive example. Airline rules, customs, and import/export rules are the users' responsibility.
-- **Link previews:** the page title and meta description are updated on the client side. Because this is a client-only SPA, **WhatsApp and social Open Graph previews can't be guaranteed** without server-side rendering or prerendering.
-- **Share:** uses `navigator.share` when available. Otherwise it copies the link to the clipboard, and if that also fails, it shows the link in a dialog for manual copying.
-- Images: seed listings use generated route illustrations and category emoji, with no external images. If a URL you enter fails to load, the app falls back to the illustration.
+- **Login:** magic-link email is shown in a simulated inbox. The demo account switcher stays in the footer. Access checks run in the app only and are **not a security boundary**.
+- **WhatsApp OTP:** the code is shown in a simulated WhatsApp message.
+- **Not multi-user.** Data is per browser. Notifications are in-app only.
+- **Payments:** client-to-provider payment is records only. Plan checkout is simulated: nothing is charged.
+- **Verification:** ticket proofs are reviewed by the demo admin. No ID documents are collected.
+- **Terms and privacy** are a draft and need review by a lawyer before real use.
+- **Link previews:** client-side meta only, so WhatsApp previews aren't guaranteed without SSR/prerendering. The PNG trip card is the reliable share asset.
 
 Don't enter passwords, ID numbers, sensitive documents, or real payment details.
 
@@ -135,16 +156,20 @@ src/
   app/            App.tsx (toaster, storage errors), router.tsx
   components/
     layout/       AppLayout (header, bottom nav, demo banner, footer), Guards, Logo
-    listings/     ListingCard, SaveButton, AvailabilityMeter, PromotePanel
+    landing/      TripDemo (stageshow hero demo)
+    listings/     ListingCard, SaveButton, AvailabilityMeter, PromotePanel (plan panel), ShareTripCard, TicketProof
+    orders/       OrderParts (timeline, actions, handover/payment/review dialogs)
+    plans/        Checkout (simulated plan checkout)
     forms/        ListingWizard (weight + shopping), InquiryForms (weight/order dialogs)
     messaging/    InquiryPanel (accept/decline/cancel/complete/star rating)
     shared/       display primitives, AccountSwitcher (+useAuth), ConfirmProvider, ShareButton, ReportDialog, SafetyNotice
     ui/           button, form, dialog, dropdown-menu, misc (Card, Badge, Tabs)
   pages/          one file per route
   hooks/          useStore (useSyncExternalStore selectors), usePageMeta
-  services/       storageService, store, listingService, inquiryService, messagingService, userService, moderationService
+  services/       storageService, store, listingService, inquiryService (orders + holds), purchaseService, messagingService, userService (magic link, OTP, mode), moderationService
   data/           seed.ts, locations.ts (configurable countries/cities)
-  lib/            availability (derived quota/stock/status), listingForm (validation), search, format, dates
+  lib/            availability (quota, holds), plans (pricing + entitlements), trust (trust score), listingForm, search, format, dates
+  stageshow/      kit/ copied from benjitaylor/skills (MIT)
   types/          domain model (discriminated union Listing = WeightListing | ShoppingListing)
 ```
 

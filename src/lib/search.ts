@@ -93,7 +93,7 @@ function haystack(v: ListingView): string {
     l.destination.city,
     l.destination.country,
     v.owner?.displayName ?? '',
-    l.type === 'weight' ? 'jastip diaspora bagasi titip kg' : 'jastip shopping belanja produk',
+    l.type === 'weight' ? 'jastip diaspora bagasi titip kg' : 'jastip barang belanja shopping produk pre-order po',
   ];
   if (l.type === 'shopping') l.products.forEach((p) => parts.push(p.name, p.category, p.variant ?? ''));
   return norm(parts.join(' '));
@@ -131,9 +131,13 @@ export function applyFilters(views: ListingView[], f: ExploreFilters): ListingVi
   });
 
   const openFirst = (a: ListingView, b: ListingView) => Number(b.status === 'open') - Number(a.status === 'open');
+  // Paid placement only reorders open listings, never hides or filters anything.
+  const promoted = (v: ListingView) => (v.status !== 'open' ? 0 : v.featuredUntil ? 2 : v.ownerPromoted ? 1 : 0);
   out.sort((a, b) => {
     const o = openFirst(a, b);
     if (o) return o;
+    const pr = promoted(b) - promoted(a);
+    if (pr) return pr;
     switch (f.sort) {
       case 'newest':
         return (b.listing.publishedAt ?? b.listing.createdAt).localeCompare(a.listing.publishedAt ?? a.listing.createdAt);

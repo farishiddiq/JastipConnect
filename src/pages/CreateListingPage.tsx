@@ -1,8 +1,12 @@
 import * as React from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Plane, ShoppingBag } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowRight, Check, Info, Plane, ShoppingBag } from 'lucide-react';
 import type { ListingType } from '@/types';
-import { RequireUser } from '@/components/layout/Guards';
+import { RequireProvider } from '@/components/layout/Guards';
+import { Button } from '@/components/ui/button';
+import { useCheckout } from '@/components/plans/Checkout';
+import { useDB } from '@/hooks/useStore';
+import { publishAllowance } from '@/services/listingService';
 import { ListingWizard } from '@/components/forms/ListingWizard';
 import { ComingSoonBadge, PageHeader } from '@/components/shared/display';
 import { usePageMeta } from '@/hooks/useStore';
@@ -10,26 +14,65 @@ import { emptyForm } from '@/lib/listingForm';
 import { cn } from '@/lib/utils';
 
 export function CreateListingPage() {
-  usePageMeta('Pasang listing', 'Pasang perjalanan jastip bagasi atau buka PO belanja dari luar negeri.');
+  usePageMeta('Pasang trip', 'Pasang trip jastip bagasi atau buka pre-order Jastip Barang dari luar negeri.');
   const [params, setParams] = useSearchParams();
   const t = params.get('type');
   const type: ListingType | null = t === 'weight' || t === 'shopping' ? t : null;
 
   return (
-    <RequireUser reason="Pilih akun demo untuk memasang listing.">
+    <RequireProvider reason="Provider wajib masuk dan verifikasi WhatsApp sebelum posting.">
       {(user) => (
         <div className="container py-6 sm:py-10">
+          <AllowanceBanner userId={user.id} />
           {!type ? (
             <TypeChooser onPick={(tp) => setParams({ type: tp })} />
           ) : (
             <>
-              <PageHeader title={type === 'weight' ? 'Pasang Jastip Bagasi' : 'Pasang Jastip Belanja'} description="Simpan draf kapan saja." className="mx-auto max-w-3xl" />
+              <PageHeader title={type === 'weight' ? 'Pasang Jastip Bagasi' : 'Pasang Jastip Barang'} description="Simpan draf kapan saja." className="mx-auto max-w-3xl" />
               <ListingWizard key={type} mode="create" initial={emptyForm(type)} userId={user.id} onBackToType={() => setParams({})} />
             </>
           )}
         </div>
       )}
-    </RequireUser>
+    </RequireProvider>
+  );
+}
+
+function AllowanceBanner({ userId }: { userId: string }) {
+  useDB(); // re-render when listings or purchases change
+  const { startCheckout } = useCheckout();
+  const a = publishAllowance(userId);
+  if (a.ok && a.pro) return null;
+  if (a.ok && !a.usesCredit)
+    return (
+      <p className="mx-auto mb-6 flex max-w-3xl items-start gap-2 rounded-2xl bg-teal-50 p-4 text-sm text-teal-900">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" /> Akun gratis: 1 trip aktif sekaligus, order tanpa batas. Trip ini memakai slot gratis Anda.
+      </p>
+    );
+  if (a.ok)
+    return (
+      <p className="mx-auto mb-6 flex max-w-3xl items-start gap-2 rounded-2xl bg-teal-50 p-4 text-sm text-teal-900">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" /> Slot gratis sudah terpakai. Trip ini akan memakai 1 dari {a.credits} slot listing berbayar Anda.
+      </p>
+    );
+  return (
+    <div className="mx-auto mb-6 max-w-3xl rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
+      <p className="flex items-start gap-2 font-semibold">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" /> Anda sudah punya 1 trip aktif (batas akun gratis).
+      </p>
+      <p className="mt-1 pl-6">Anda tetap bisa menyusun draf. Untuk menerbitkan, tutup trip lain atau pilih salah satu:</p>
+      <div className="mt-3 flex flex-wrap gap-2 pl-6">
+        <Button size="sm" variant="accent" onClick={() => startCheckout('nff_single')}>
+          Slot listing Rp50.000
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => startCheckout('pro')}>
+          Jastiper Pro Rp99.000/bulan
+        </Button>
+        <Button asChild size="sm" variant="ghost">
+          <Link to="/my-listings">Kelola trip</Link>
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -39,22 +82,22 @@ function TypeChooser({ onPick }: { onPick: (t: ListingType) => void }) {
       type: 'weight',
       icon: <Plane />,
       title: 'Jastip Bagasi',
-      text: 'Tawarkan sisa bagasi. Bayar per kg.',
-      points: ['Atur total kg & biaya/kg', 'Cocok untuk traveler'],
+      text: 'Pulang kampung atau balik ke perantauan? Tawarkan sisa bagasi Anda, dibayar per kg.',
+      points: ['Kuota kg live dengan hold otomatis', 'Link WhatsApp + kartu trip siap share', 'Paling dicari diaspora'],
       tone: 'bg-navy text-white',
     },
     {
       type: 'shopping',
       icon: <ShoppingBag />,
-      title: 'Jastip Belanja',
-      text: 'Buka PO produk dari kotamu.',
-      points: ['Katalog banyak produk dengan stok', 'Stok direservasi saat pesanan diterima'],
+      title: 'Jastip Barang',
+      text: 'Buka pre-order produk dari kota Anda.',
+      points: ['Katalog banyak produk dengan stok', 'Stok ditahan saat pesanan masuk'],
       tone: 'bg-teal-500 text-deep',
     },
   ];
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Pasang listing" description="Pilih jenis listing." />
+      <PageHeader title="Pasang trip" description="Pilih jenis listing. Jastip Bagasi paling cocok untuk diaspora yang sering pulang." />
       <div className="grid gap-4 sm:grid-cols-2">
         {options.map((o) => (
           <button

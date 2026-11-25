@@ -21,28 +21,35 @@ import { Badge, Card, Separator } from '@/components/ui/misc';
 import {
   Avatar,
   EmptyState,
+  FeaturedBadge,
   InquiryStatusBadge,
   ListingCover,
   ListingStatusBadge,
+  ProBadge,
   ProductThumb,
   RouteDisplay,
   StarRating,
+  TripVerifiedBadge,
+  TrustMeter,
   TYPE_LABEL,
   VerificationLabel,
 } from '@/components/shared/display';
+import { ShareTripButton } from '@/components/listings/ShareTripCard';
+import { TicketProofButton } from '@/components/listings/TicketProof';
+import { useCheckout } from '@/components/plans/Checkout';
 import { SafetyNotice } from '@/components/shared/SafetyNotice';
 import { ShareButton } from '@/components/shared/ShareButton';
 import { ReportButton } from '@/components/shared/ReportDialog';
-import { useAuth } from '@/components/shared/AccountSwitcher';
 import { useConfirm } from '@/components/shared/ConfirmProvider';
 import { AvailabilityMeter, PriceLabel, SaveButton } from '@/components/listings/ListingCard';
 import { LuggageMeter } from '@/components/listings/LuggageMeter';
 import { QuantityStepper, selectionTotals, ShoppingOrderDialog, WeightInquiryDialog } from '@/components/forms/InquiryForms';
-import { PromotePanel } from '@/components/listings/PromotePanel';
-import { useCompletedCount, useCurrentUser, useDB, useListingView, usePageMeta, useProviderRating, type ListingView } from '@/hooks/useStore';
+import { useCompletedCount, useCurrentUser, useDB, useListingView, usePageMeta, useProviderRating, useTrust, type ListingView } from '@/hooks/useStore';
 import { closeListing, recordView, reopenListing } from '@/services/listingService';
 import { productAvailability } from '@/lib/availability';
-import { formatCountdown, formatDate, formatMoney, formatMoneyGroups, formatMonthYear, formatProductPrice, listingTitle } from '@/lib/format';
+import { formatCountdown, formatDate, formatKg, formatMoney, formatMoneyGroups, formatMonthYear, formatProductPrice, listingTitle } from '@/lib/format';
+import { OPEN_ORDER_STATUSES } from '@/lib/availability';
+import { Sparkles, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const BLOCK_REASON: Record<string, string> = {
@@ -94,24 +101,20 @@ function ListingDetail({ view }: { view: ListingView }) {
   const { inquiries } = useDB();
   const [selection, setSelection] = React.useState<Record<string, number>>({});
   const [dialog, setDialog] = React.useState<'weight' | 'shop' | null>(null);
-  const { requireUser } = useAuth();
 
   const myInquiries = React.useMemo(
     () => (user ? inquiries.filter((i) => i.listingId === l.id && i.buyerId === user.id) : []),
     [inquiries, user, l.id],
   );
-  const { conversations } = useDB();
-  const convFor = (inqId: string) => conversations.find((c) => c.inquiryId === inqId)?.id;
 
   const remainingById = React.useMemo(
     () => (l.type === 'shopping' ? Object.fromEntries(productAvailability(l, inquiries).map((a) => [a.product.id, a.remaining])) : {}),
     [l, inquiries],
   );
 
+  // Guests can open the request form right away; sign-up happens on submit.
   const startInquiry = () => {
-    const uid = requireUser(l.type === 'weight' ? 'Pilih akun demo untuk bertanya ke penyedia.' : 'Pilih akun demo untuk mengajukan pesanan.');
-    if (!uid) return;
-    if (uid === l.ownerId) return toast.info('Ini listing Anda sendiri.');
+    if (user?.id === l.ownerId) return toast.info('Ini trip Anda sendiri.');
     setDialog(l.type === 'weight' ? 'weight' : 'shop');
   };
 
@@ -145,6 +148,8 @@ function ListingDetail({ view }: { view: ListingView }) {
             <p className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
               {TYPE_LABEL[l.type]}
               <ListingStatusBadge status={status} type={l.type} />
+              {view.featuredUntil && status === 'open' && <FeaturedBadge />}
+              {l.type === 'weight' && <TripVerifiedBadge verified={view.tripVerified} pending={l.ticketProof?.status === 'pending'} />}
               {l.closedByAdmin && <Badge tone="red">Ditutup moderator</Badge>}
             </p>
             <h1 className="text-2xl font-bold leading-[1.15] text-navy sm:text-4xl">{listingTitle(l)}</h1>
@@ -236,7 +241,8 @@ function ListingDetail({ view }: { view: ListingView }) {
           <SafetyNotice variant="compact" />
 
           <div className="flex flex-wrap items-center gap-2">
-            <ShareButton path={`/listings/${l.id}`} title={l.title} text={`${l.title}: ${l.origin.city} → ${l.destination.city}`} />
+            <ShareTripButton view={view} variant={isOwner ? 'accent' : 'outline'} />
+            <ShareButton path={`/listings/${l.id}`} title={l.title} text={`${l.title}: ${l.origin.city} → ${l.destination.city}`} label="Salin link" />
             {!isOwner && <ReportButton targetType="listing" targetId={l.id} targetLabel={l.title} />}
             <span className="ml-auto hidden items-center gap-1 text-xs text-slate-400 sm:flex">
               <Eye className="h-4 w-4" /> {l.viewCount} dilihat
@@ -258,12 +264,11 @@ function ListingDetail({ view }: { view: ListingView }) {
                 selection={selection}
                 canInquire={canInquire}
                 onStart={startInquiry}
-                myInquiries={myInquiries.map((i) => ({ id: i.id, status: i.status, conv: convFor(i.id) }))}
+                myInquiries={myInquiries.map((i) => ({ id: i.id, status: i.status }))}
               />
             )}
           </Card>
-          <ProviderCard ownerId={l.ownerId} owner={owner} />
-          {isOwner && <PromotePanel compact />}
+          <ProviderCard ownerId={l.ownerId} owner={owner} pro={view.ownerPro} />
         </aside>
       </div>
 
@@ -277,16 +282,16 @@ function ListingDetail({ view }: { view: ListingView }) {
         </>
       )}
 
-      {user && l.type === 'weight' && view.availability.type === 'weight' && (
+      {l.type === 'weight' && view.availability.type === 'weight' && (
         <WeightInquiryDialog
           open={dialog === 'weight'}
           onOpenChange={(o) => setDialog(o ? 'weight' : null)}
           listing={l as WeightListing}
           remaining={view.availability.remaining}
-          buyerId={user.id}
+          buyerId={user?.id ?? null}
         />
       )}
-      {user && l.type === 'shopping' && (
+      {l.type === 'shopping' && (
         <ShoppingOrderDialog
           open={dialog === 'shop'}
           onOpenChange={(o) => setDialog(o ? 'shop' : null)}
@@ -294,7 +299,7 @@ function ListingDetail({ view }: { view: ListingView }) {
           selection={selection}
           onSelectionChange={setSelection}
           remainingById={remainingById}
-          buyerId={user.id}
+          buyerId={user?.id ?? null}
         />
       )}
     </div>
@@ -329,7 +334,12 @@ function WeightCapacity({ view }: { view: ListingView }) {
         Kuota bagasi
       </h2>
       <LuggageMeter className="mt-4 rounded-3xl bg-white p-4 shadow-card sm:p-5" total={l.capacityKg} reserved={a.reserved} />
-      <p className="num mt-3 text-sm text-slate-600">{formatMoney(l.pricePerKg, l.currency)}/kg</p>
+      <p className="num mt-3 text-sm text-slate-600">
+        {formatMoney(l.pricePerKg, l.currency)}/kg
+        {a.type === 'weight' && a.held > 0 && (
+          <span className="text-amber-700"> · {formatKg(a.held)} sedang ditahan request yang menunggu jawaban</span>
+        )}
+      </p>
     </section>
   );
 }
@@ -345,7 +355,7 @@ function BuyerCta({
   selection: Record<string, number>;
   canInquire: boolean;
   onStart: () => void;
-  myInquiries: { id: string; status: import('@/types').InquiryStatus; conv?: string }[];
+  myInquiries: { id: string; status: import('@/types').InquiryStatus }[];
 }) {
   const l = view.listing;
   const { totals, count } = l.type === 'shopping' ? selectionTotals(l, selection) : { totals: {}, count: 0 };
@@ -353,16 +363,14 @@ function BuyerCta({
     <div className="space-y-3">
       {myInquiries.length > 0 && (
         <div className="rounded-2xl bg-slate-100 p-3.5 text-sm">
-          <p className="font-bold text-navy">Inquiry Anda di listing ini</p>
+          <p className="font-bold text-navy">Request Anda di trip ini</p>
           <ul className="mt-2 space-y-1.5">
             {myInquiries.map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-2">
                 <InquiryStatusBadge status={i.status} />
-                {i.conv && (
-                  <Link to={`/inbox/${i.conv}`} className="text-[13px] font-bold text-teal-800 hover:underline">
-                    Buka percakapan →
-                  </Link>
-                )}
+                <Link to={`/orders/${i.id}`} className="text-[13px] font-bold text-teal-800 hover:underline">
+                  Lacak order →
+                </Link>
               </li>
             ))}
           </ul>
@@ -371,7 +379,7 @@ function BuyerCta({
       {canInquire ? (
         l.type === 'weight' ? (
           <Button variant="accent" size="lg" className="w-full" onClick={onStart}>
-            <MessageCircle /> Ajukan Titipan
+            <MessageCircle /> Request titipan
           </Button>
         ) : (
           <>
@@ -391,12 +399,12 @@ function BuyerCta({
       ) : (
         <>
           <Button size="lg" className="w-full" disabled>
-            <Lock /> {l.type === 'weight' ? 'Ajukan Titipan' : 'Tanya / Pesan'}
+            <Lock /> {l.type === 'weight' ? 'Request titipan' : 'Tanya / Pesan'}
           </Button>
           <p className="text-[13px] text-slate-500">{BLOCK_REASON[view.status]}</p>
         </>
       )}
-      <p className="text-center text-xs text-slate-600">Pembayaran di luar platform</p>
+      <p className="text-center text-xs text-slate-600">Gratis untuk klien · Bayar ke penyedia setelah serah terima</p>
     </div>
   );
 }
@@ -420,7 +428,7 @@ function MobileCta({ view, selection, canInquire, onStart }: { view: ListingView
         <Button variant="accent" onClick={onStart} disabled={l.type === 'shopping' && count === 0}>
           {l.type === 'weight' ? (
             <>
-              <MessageCircle /> Ajukan Titipan
+              <MessageCircle /> Request
             </>
           ) : count === 0 ? (
             'Pilih produk'
@@ -444,13 +452,15 @@ function OwnerActions({ view }: { view: ListingView }) {
   const user = useCurrentUser()!;
   const confirm = useConfirm();
   const { inquiries } = useDB();
+  const { startCheckout } = useCheckout();
   const mine = inquiries.filter((i) => i.listingId === l.id);
   const pending = mine.filter((i) => i.status === 'pending').length;
+  const active = mine.filter((i) => OPEN_ORDER_STATUSES.includes(i.status)).length;
 
   const onClose = async () => {
     const okay = await confirm({
       title: 'Tutup listing ini?',
-      description: 'Tidak menerima inquiry baru. Bisa dibuka lagi selama batas waktu belum lewat.',
+      description: 'Tidak menerima request baru. Order berjalan tetap bisa diselesaikan.',
       confirmLabel: 'Tutup listing',
       destructive: true,
     });
@@ -472,8 +482,8 @@ function OwnerActions({ view }: { view: ListingView }) {
           <p className="text-slate-500">dilihat</p>
         </div>
         <div className="rounded-xl bg-slate-50 p-2">
-          <p className="text-xl font-semibold text-navy">{mine.length}</p>
-          <p className="text-slate-500">inquiry</p>
+          <p className="text-xl font-semibold text-navy">{active}</p>
+          <p className="text-slate-500">berjalan</p>
         </div>
         <div className="rounded-xl bg-amber-50 p-2">
           <p className="text-lg font-extrabold text-amber-700">{pending}</p>
@@ -481,8 +491,13 @@ function OwnerActions({ view }: { view: ListingView }) {
         </div>
       </div>
       <Button asChild variant="accent" className="w-full">
+        <Link to={`/my-listings/${l.id}/orders`}>
+          <FileSpreadsheet /> Order sheet ({mine.length})
+        </Link>
+      </Button>
+      <Button asChild variant="outline" className="w-full">
         <Link to={`/inbox?listing=${l.id}`}>
-          <Inbox /> Lihat Inquiry
+          <Inbox /> Chat request
         </Link>
       </Button>
       <div className="grid grid-cols-2 gap-2">
@@ -505,15 +520,27 @@ function OwnerActions({ view }: { view: ListingView }) {
           </Button>
         )}
       </div>
+      {view.status === 'open' && (
+        <Button variant="soft" className="w-full" onClick={() => startCheckout('boost', l.id)}>
+          <Sparkles /> {view.featuredUntil ? `Unggulan s/d ${formatDate(view.featuredUntil.slice(0, 10))} · perpanjang` : 'Boost trip · Rp25.000/7 hari'}
+        </Button>
+      )}
+      {l.type === 'weight' && (
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+          <span>Badge tiket</span>
+          <TicketProofButton listing={l} actorId={user.id} />
+        </div>
+      )}
       {l.closedByAdmin && <p className="text-xs text-red-600">Ditutup moderator.</p>}
       {view.status === 'expired' && <p className="text-xs text-slate-500">Batas lewat. Edit tanggal untuk membuka lagi.</p>}
     </div>
   );
 }
 
-function ProviderCard({ ownerId, owner }: { ownerId: string; owner?: import('@/types').User }) {
+function ProviderCard({ ownerId, owner, pro }: { ownerId: string; owner?: import('@/types').User; pro?: boolean }) {
   const rating = useProviderRating(ownerId);
   const completed = useCompletedCount(ownerId);
+  const trust = useTrust(owner);
   if (!owner) return null;
   return (
     <Card className="p-5">
@@ -529,6 +556,7 @@ function ProviderCard({ ownerId, owner }: { ownerId: string; owner?: import('@/t
       </Link>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <VerificationLabel user={owner} />
+        {pro && <ProBadge />}
         {rating.count > 0 ? (
           <span className="flex items-center gap-1.5 text-sm">
             <StarRating value={rating.average} size={14} />
@@ -539,11 +567,12 @@ function ProviderCard({ ownerId, owner }: { ownerId: string; owner?: import('@/t
           <span className="text-xs text-slate-600">Belum ada ulasan</span>
         )}
       </div>
-      <p className="mt-2 text-[13px] text-slate-600">{completed} transaksi demo selesai</p>
+      <p className="mt-2 text-[13px] text-slate-600">{completed} order selesai</p>
+      {trust && <TrustMeter trust={trust} className="mt-4" />}
       <Button asChild variant="outline" size="sm" className="mt-4 w-full">
         <Link to={`/providers/${owner.id}`}>Lihat profil & ulasan</Link>
       </Button>
-      <p className="mt-3 text-xs leading-snug text-slate-600">Kontak & alamat dibahas di inbox setelah deal.</p>
+      <p className="mt-3 text-xs leading-snug text-slate-600">Jangan transfer sebelum request diterima dan barang ditimbang. Laporkan bila diminta bayar di luar kesepakatan.</p>
     </Card>
   );
 }

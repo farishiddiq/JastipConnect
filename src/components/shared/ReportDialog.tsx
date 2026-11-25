@@ -21,7 +21,7 @@ export function ReportButton({
   const [error, setError] = React.useState<string>();
 
   const start = () => {
-    if (!requireUser('Pilih akun demo untuk mengirim laporan.')) return;
+    if (!requireUser('Masuk untuk mengirim laporan.')) return;
     setReason('');
     setDescription('');
     setError(undefined);

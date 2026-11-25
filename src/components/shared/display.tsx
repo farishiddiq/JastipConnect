@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { ArrowRight, BadgeCheck, CircleDashed, Plane, ShoppingBag, Star } from 'lucide-react';
+import { ArrowRight, BadgeCheck, CircleDashed, Crown, Phone, Plane, ShieldCheck, ShoppingBag, Sparkles, Star, Ticket } from 'lucide-react';
+import type { TrustScore } from '@/lib/trust';
 import type { InquiryStatus, Listing, ListingStatus, ListingType, User } from '@/types';
 import { cn, initials, pickBySeed } from '@/lib/utils';
 import { categoryImage, coverImageFor } from '@/data/images';
@@ -65,30 +66,34 @@ export function ListingStatusBadge({ status, type }: { status: ListingStatus; ty
 export const INQUIRY_STATUS_META: Record<InquiryStatus, { label: string; tone: BadgeTone }> = {
   pending: { label: 'Menunggu', tone: 'amber' },
   accepted: { label: 'Diterima', tone: 'teal' },
+  handed_over: { label: 'Diserahkan', tone: 'teal' },
+  shipped: { label: 'Dikirim', tone: 'teal' },
+  delivered: { label: 'Sampai', tone: 'teal' },
+  completed: { label: 'Selesai', tone: 'green' },
   declined: { label: 'Ditolak', tone: 'red' },
   cancelled: { label: 'Dibatalkan', tone: 'muted' },
-  completed: { label: 'Selesai', tone: 'green' },
+  expired: { label: 'Hold kedaluwarsa', tone: 'muted' },
 };
 
-/** Accepted inquiries show their stage: in progress, or waiting for the other side to confirm completion. */
-export function InquiryStatusBadge({
-  status,
-  inquiry,
-}: {
-  status: InquiryStatus;
-  inquiry?: { buyerConfirmedComplete?: boolean; providerConfirmedComplete?: boolean };
-}) {
-  if (status === 'accepted' && inquiry) {
-    const confirmed = Number(!!inquiry.buyerConfirmedComplete) + Number(!!inquiry.providerConfirmedComplete);
-    return <Badge tone="teal">{confirmed === 1 ? 'Menunggu konfirmasi' : 'Berlangsung'}</Badge>;
-  }
+export function InquiryStatusBadge({ status }: { status: InquiryStatus; inquiry?: unknown }) {
   const meta = INQUIRY_STATUS_META[status];
+  return <Badge tone={meta.tone}>{meta.label}</Badge>;
+}
+
+export const PAYMENT_STATUS_META = {
+  unpaid: { label: 'Belum bayar', tone: 'amber' },
+  proof_uploaded: { label: 'Bukti diunggah', tone: 'teal' },
+  paid: { label: 'Lunas', tone: 'green' },
+} as const;
+
+export function PaymentBadge({ status }: { status: keyof typeof PAYMENT_STATUS_META }) {
+  const meta = PAYMENT_STATUS_META[status];
   return <Badge tone={meta.tone}>{meta.label}</Badge>;
 }
 
 export const TYPE_LABEL: Record<ListingType, string> = {
   weight: 'Jastip Bagasi',
-  shopping: 'Jastip Belanja',
+  shopping: 'Jastip Barang',
 };
 
 export function TypeBadge({ type, className }: { type: ListingType; className?: string }) {
@@ -176,18 +181,93 @@ export function StarInput({ value, onChange, id }: { value: number; onChange: (v
   );
 }
 
+/** WhatsApp verification (simulated OTP). Identity documents are not checked in this demo. */
 export function VerificationLabel({ user }: { user?: User }) {
   if (!user) return null;
-  return user.demoVerified ? (
-    <Badge tone="blue" title="Label demo: tidak ada pemeriksaan identitas sungguhan.">
-      <BadgeCheck /> Verifikasi demo
+  return user.phoneVerifiedAt ? (
+    <Badge tone="green" title="Nomor WhatsApp diverifikasi dengan OTP (simulasi demo).">
+      <Phone /> WhatsApp terverifikasi
+    </Badge>
+  ) : user.email ? (
+    // Clients sign in with a magic link, so a working email is already proven.
+    <Badge tone="muted" title="Masuk lewat link email (simulasi demo).">
+      <BadgeCheck /> Email terverifikasi
     </Badge>
   ) : (
-    <Badge tone="muted" title="Identitas pengguna ini belum diverifikasi.">
+    <Badge tone="muted" title="Pengguna ini belum diverifikasi.">
       <CircleDashed /> Belum diverifikasi
     </Badge>
   );
 }
+
+export function TripVerifiedBadge({ verified, pending, className }: { verified: boolean; pending?: boolean; className?: string }) {
+  if (verified)
+    return (
+      <Badge tone="green" className={className} title="Moderator sudah memeriksa tiket / boarding pass trip ini.">
+        <Ticket /> Trip terverifikasi
+      </Badge>
+    );
+  return (
+    <Badge tone="muted" className={className} title="Tiket untuk trip ini belum diperiksa moderator.">
+      <CircleDashed /> {pending ? 'Tiket sedang ditinjau' : 'Trip belum diverifikasi'}
+    </Badge>
+  );
+}
+
+export function FeaturedBadge({ className }: { className?: string }) {
+  return (
+    <Badge tone="amber" className={className} title="Trip ini di-boost oleh penyedia (Featured trip).">
+      <Sparkles /> Unggulan
+    </Badge>
+  );
+}
+
+export function ProBadge({ className }: { className?: string }) {
+  return (
+    <Badge tone="navy" className={cn('bg-navy text-white', className)} title="Jastiper Pro">
+      <Crown /> Pro
+    </Badge>
+  );
+}
+
+const TRUST_TONE = { Baru: 'bg-slate-300', Cukup: 'bg-amber-400', Baik: 'bg-teal-500', 'Sangat baik': 'bg-emerald-500' } as const;
+
+/** Compact trust meter with an explainable breakdown. */
+export function TrustMeter({ trust, detailed, className }: { trust: TrustScore; detailed?: boolean; className?: string }) {
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="flex items-center gap-1.5 font-semibold text-navy">
+          <ShieldCheck className="h-4 w-4 text-teal-600" aria-hidden /> Skor kepercayaan
+        </span>
+        <span className="num font-bold text-navy">
+          {trust.score}
+          <span className="font-medium text-slate-500">/100 · {trust.level}</span>
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={trust.score} aria-label="Skor kepercayaan">
+        <div className={cn('h-full rounded-full', TRUST_TONE[trust.level])} style={{ width: `${trust.score}%` }} />
+      </div>
+      {trust.warning && <p className="mt-1.5 text-xs font-semibold text-red-600">{trust.warning}</p>}
+      {detailed && (
+        <ul className="mt-3 space-y-1">
+          {trust.factors.map((f) => (
+            <li key={f.label} className="flex justify-between gap-2 text-xs text-slate-600">
+              <span>{f.label}</span>
+              <span className={cn('num font-semibold', f.points < 0 ? 'text-red-600' : 'text-navy')}>
+                {f.points > 0 ? '+' : ''}
+                {f.points}
+                {f.max > 0 && <span className="font-normal text-slate-400">/{f.max}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export { BadgeCheck };
 
 /** Listing cover: real photo by city/category, with a designed gradient fallback if it fails to load. */
 export function ListingCover({ listing, className, compact }: { listing: Listing; className?: string; compact?: boolean }) {

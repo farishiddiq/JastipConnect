@@ -1,10 +1,16 @@
 import * as React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeftRight, ArrowRight, MapPin, MessageCircle, Package, Plane, PlusCircle, Search, ShieldCheck, ShoppingBag, Star, X } from 'lucide-react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { ArrowRight, BadgeCheck, CreditCard, PackageCheck, Plane, PlusCircle, Scale, Search, ShieldCheck, ShoppingBag, Star, Ticket, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/shared/display';
+import { Avatar, EmptyState, ProBadge, StarRating } from '@/components/shared/display';
 import { ListingGrid } from '@/components/listings/ListingCard';
-import { useDB, useListingViews, usePageMeta } from '@/hooks/useStore';
+import { TripDemo } from '@/components/landing/TripDemo';
+import { useCurrentUser, useDB, useListingViews, useMode, usePageMeta } from '@/hooks/useStore';
+import { InquiryStatusBadge } from '@/components/shared/display';
+import { inquiryTotals, OPEN_ORDER_STATUSES } from '@/lib/availability';
+import { formatKg, formatMoneyGroups } from '@/lib/format';
+import { isPro, isPromoted } from '@/lib/plans';
+import { computeTrust } from '@/lib/trust';
 import { POPULAR_ROUTES, cityCode } from '@/data/locations';
 import { TYPE_IMAGES } from '@/data/images';
 import { Reveal } from '@/components/shared/Reveal';
@@ -14,15 +20,18 @@ import { cn } from '@/lib/utils';
 type Direction = 'SA-ID' | 'ID-SA' | 'AU-ID' | 'ID-AU' | '';
 
 const HOW_STEPS = [
-  { emoji: '🔍', title: 'Cari', text: 'Pilih rute atau produk.' },
-  { emoji: '📩', title: 'Ajukan', text: 'Kirim permintaan ke penyedia.' },
-  { emoji: '🤝', title: 'Sepakati', text: 'Atur serah terima lewat chat.' },
-  { emoji: '⭐', title: 'Selesai', text: 'Konfirmasi, lalu beri ulasan.' },
+  { icon: Search, title: 'Cari trip', text: 'Pilih rute pulang atau balik ke perantauan.' },
+  { icon: PackageCheck, title: 'Request', text: 'Isi berat dan barang. Kuota langsung ditahan 24 jam.' },
+  { icon: Scale, title: 'Serah terima', text: 'Barang ditimbang dan difoto. Tagihan keluar otomatis.' },
+  { icon: CreditCard, title: 'Bayar & lacak', text: 'Unggah bukti bayar, pantau sampai dikirim.' },
+  { icon: Star, title: 'Terima & nilai', text: 'Konfirmasi diterima, lalu beri rating.' },
 ];
 
 export function HomePage() {
-  usePageMeta(undefined, 'Jastip diaspora dan personal shopper Saudi ↔ Indonesia.');
+  usePageMeta(undefined, 'Marketplace jastip bagasi untuk diaspora Indonesia di Saudi dan Australia. Titip oleh-oleh lewat bagasi traveler terverifikasi.');
   const views = useListingViews();
+  const user = useCurrentUser();
+  const mode = useMode();
   const open = views.filter((v) => v.status === 'open');
   const soonest = [...open].sort((a, b) => compareListingDates(a.listing, b.listing)).slice(0, 5);
   const newest = [...open]
@@ -30,53 +39,57 @@ export function HomePage() {
     .sort((a, b) => (b.listing.publishedAt ?? '').localeCompare(a.listing.publishedAt ?? ''))
     .slice(0, 5);
 
+  // Providers land on their own workspace; the marketplace landing is for clients.
+  if (user && mode === 'provider') return <Navigate to="/dashboard" replace />;
+
   return (
     <>
+      {user && <ActiveOrders userId={user.id} name={user.displayName.split(' ')[0] ?? ''} />}
       <Hero />
 
-      {/* Two ways to use the app */}
+      {/* Bagasi is the primary use; Barang is secondary */}
       <section className="container pt-10 sm:pt-16" aria-labelledby="cat-title">
         <h2 id="cat-title" className="text-xl font-semibold text-navy sm:text-3xl">
           Mau titip apa?
         </h2>
-        <div className="mt-4 grid gap-3 sm:mt-5 sm:grid-cols-2">
+        <div className="mt-4 grid gap-3 sm:mt-5 sm:grid-cols-[1.5fr_1fr]">
           <PhotoTile
             to="/explore?type=weight"
             image={TYPE_IMAGES.weight}
             icon={<Plane className="text-sky-600" />}
             title="Jastip Bagasi"
-            text="Titip di sisa bagasi traveler. Bayar per kg."
-            meta={`${open.filter((v) => v.listing.type === 'weight').length} perjalanan terbuka`}
-            />
+            text="Titip oleh-oleh dan kebutuhan lewat sisa bagasi sesama diaspora. Bayar per kg, ditimbang saat serah terima."
+            meta={`${open.filter((v) => v.listing.type === 'weight').length} trip terbuka`}
+            primary
+          />
           <PhotoTile
             to="/explore?type=shopping"
             image={TYPE_IMAGES.shopping}
             icon={<ShoppingBag className="text-amber-600" />}
-            title="Jastip Belanja"
-            text="Pesan produk lewat personal shopper."
-            meta={`${open.filter((v) => v.listing.type === 'shopping').length} PO terbuka`}
+            title="Jastip Barang"
+            text="Pre-order produk lewat personal shopper."
+            meta={`${open.filter((v) => v.listing.type === 'shopping').length} pre-order terbuka`}
           />
         </div>
-        <p className="mt-4 hidden text-sm text-slate-500 sm:block">
-          Segera hadir: <span className="text-navy">Preloved</span>, <span className="text-navy">Ekspedisi</span>, <span className="text-navy">Komunitas</span>
-        </p>
       </section>
 
       <section className="container pt-8 sm:pt-12" aria-labelledby="soon-title">
         <div className="rounded-[2rem] bg-slate-100 p-4 sm:p-7">
-        <SectionHeader id="soon-title" title="Segera berangkat" to="/explore?sort=departure" />
+        <SectionHeader id="soon-title" title="Segera berangkat" to="/explore?type=weight&sort=departure" />
         {soonest.length ? (
           <ListingGrid views={soonest} compact />
         ) : (
-          <EmptyState icon={<Plane className="text-sky-600" />} title="Belum ada listing terbuka" description="Jadilah yang pertama memasang perjalanan." action={<Button asChild><Link to="/post">Pasang listing</Link></Button>} />
+          <EmptyState icon={<Plane className="text-sky-600" />} title="Belum ada trip terbuka" description="Jadilah yang pertama memasang trip." action={<Button asChild><Link to="/post">Pasang trip</Link></Button>} />
         )}
       </div>
       </section>
 
+      <FeaturedProviders />
+
       {newest.length > 0 && (
         <section className="container pt-4 sm:pt-6" aria-labelledby="new-title">
         <div className="rounded-[2rem] bg-slate-100 p-4 sm:p-7">
-          <SectionHeader id="new-title" title="Listing terbaru" to="/explore?sort=newest" />
+          <SectionHeader id="new-title" title="Baru dipasang" to="/explore?sort=newest" />
           <ListingGrid views={newest} compact mobileLimit={4} />
         </div>
       </section>
@@ -87,44 +100,63 @@ export function HomePage() {
         <h2 id="how-title" className="text-xl font-semibold text-navy sm:text-3xl">
           Cara kerja
         </h2>
-        <ol className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <p className="mt-1 text-sm text-slate-500 sm:text-[15px]">Klien gratis. Daftar cukup dengan email saat request pertama.</p>
+        <ol className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
           {HOW_STEPS.map((st, i) => (
             <Reveal as="li" i={i} key={st.title} className="rounded-3xl bg-white p-4 shadow-card sm:p-5">
-              <span className="text-2xl" aria-hidden>
-                {st.emoji}
+              <span className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                  <st.icon className="h-[18px] w-[18px]" aria-hidden />
+                </span>
+                <span className="num text-xs font-bold text-slate-400">0{i + 1}</span>
               </span>
-              <h3 className="mt-2 text-base font-semibold text-navy">{st.title}</h3>
+              <h3 className="mt-3 text-base font-semibold text-navy">{st.title}</h3>
               <p className="mt-0.5 text-sm leading-snug text-slate-600">{st.text}</p>
             </Reveal>
           ))}
         </ol>
       </section>
 
-      {/* Safety: slim strip, not another card */}
+      {/* Trust: slim strip, not another card */}
       <section className="container pt-14" aria-label="Keamanan">
-        <div className="flex flex-col gap-4 border-y border-border py-6 sm:flex-row sm:items-center">
-          <ShieldCheck className="h-7 w-7 shrink-0 text-amber-600" aria-hidden />
-          <p className="flex-1 text-sm leading-relaxed text-slate-600">
-            <span className="font-bold text-navy">Cek aturan maskapai dan bea cukai.</span> Demo ini tidak memverifikasi identitas, barang, atau pembayaran.
-          </p>
-          <Link to="/safety" className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-teal-700 hover:underline">
-            Panduan <ArrowRight className="h-4 w-4" />
-          </Link>
+        <div className="grid gap-4 border-y border-border py-6 sm:grid-cols-3">
+          <TrustPoint icon={<BadgeCheck />} title="WhatsApp terverifikasi" text="Setiap provider verifikasi nomor sebelum posting." />
+          <TrustPoint icon={<Ticket />} title="Tiket dicek moderator" text="Badge Trip terverifikasi untuk tiket yang sudah diperiksa." />
+          <TrustPoint icon={<ShieldCheck />} title="Skor kepercayaan" text="Dari rating, order selesai, dan laporan. Laporkan yang mencurigakan." />
         </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Cek aturan maskapai dan bea cukai.{' '}
+          <Link to="/safety" className="font-semibold text-teal-700 hover:underline">
+            Panduan keamanan
+          </Link>{' '}
+          ·{' '}
+          <Link to="/syarat" className="font-semibold text-teal-700 hover:underline">
+            Syarat & Ketentuan
+          </Link>
+        </p>
       </section>
 
       {/* Closing CTA */}
       <section className="container pt-14" aria-labelledby="cta-title">
-        <div className="rounded-3xl bg-white px-6 py-10 shadow-card sm:px-10 sm:py-14">
-          <h2 id="cta-title" className="text-3xl font-semibold leading-tight text-navy sm:text-4xl">
-            Bagasi masih longgar?
-          </h2>
-          <p className="mt-3 max-w-xl text-slate-600">Atur kuota, biaya per kg, dan batas titip sendiri.</p>
-          <Button asChild variant="accent" size="lg" className="mt-7">
-            <Link to="/post">
-              <PlusCircle /> Pasang listing
-            </Link>
-          </Button>
+        <div className="grid gap-6 rounded-3xl bg-navy px-6 py-10 text-white sm:px-10 sm:py-14 lg:grid-cols-[1.4fr_1fr] lg:items-center">
+          <div>
+            <h2 id="cta-title" className="text-3xl font-semibold leading-tight sm:text-4xl">
+              Pulang kampung dengan bagasi longgar?
+            </h2>
+            <p className="mt-3 max-w-xl text-white/75">
+              Pasang trip gratis, bagikan ke grup WhatsApp diaspora, terima order tanpa batas. 1 trip aktif gratis, upgrade hanya kalau sering terbang.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 lg:justify-end">
+            <Button asChild variant="accent" size="lg">
+              <Link to="/post">
+                <PlusCircle /> Pasang trip gratis
+              </Link>
+            </Button>
+            <Button asChild size="lg" className="bg-white/10 text-white hover:bg-white/20">
+              <Link to="/harga">Lihat paket</Link>
+            </Button>
+          </div>
         </div>
       </section>
     </>
@@ -140,22 +172,24 @@ function Hero() {
   return (
     <section className="container pt-4 sm:pt-6">
       <div className="relative overflow-hidden rounded-[2rem] bg-slate-100">
-      <div className="relative grid gap-10 px-5 pb-32 pt-8 sm:pb-16 sm:pt-16 sm:px-10 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:px-14 lg:py-20">
-        <div className="min-w-0">
-          <p className="mb-4 inline-flex sm:mb-6 items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-card">
-            <span className="text-[10px] font-bold text-slate-400">SA</span> Arab Saudi <ArrowLeftRight className="h-3.5 w-3.5" /> Indonesia{' '}
+      <div className="relative grid grid-cols-1 gap-6 px-5 pb-0 pt-8 sm:px-10 sm:pt-16 lg:grid-cols-[1.1fr_1fr] lg:items-end lg:gap-10 lg:px-14 lg:pt-20">
+        <div className="min-w-0 lg:pb-16">
+          <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-card sm:mb-6">
+            <span className="text-[10px] font-bold text-slate-400">SA · AU</span> Diaspora <ArrowRight className="h-3.5 w-3.5" /> Indonesia{' '}
             <span className="text-[10px] font-bold text-slate-400">ID</span>
           </p>
           <h1 className="text-[2.4rem] font-bold leading-[1.06] text-navy sm:text-5xl lg:text-[3.4rem]">
-            Titip{' '}
+            Bawa{' '}
+            <Chip i={0} rot={-3} className="bg-teal-200 text-navy">
+              rumah
+            </Chip>{' '}
+            lebih dekat, lewat{' '}
             <span className="whitespace-nowrap">
-              <Chip i={0} rot={-3} className="bg-teal-200 text-navy">barang</Chip>,
+              <Chip i={1} rot={2} className="bg-navy text-white">
+                bagasi
+              </Chip>
             </span>{' '}
-            temukan{' '}
-            <span className="whitespace-nowrap">
-              <Chip i={1} rot={2} className="bg-navy text-white">perjalanan</Chip>,
-            </span>{' '}
-            terhubung dengan{' '}
+            sesama{' '}
             <span className="whitespace-nowrap">
               <span className="chip-pop inline-block rounded-2xl bg-teal-500 p-[2.5px] align-baseline" style={{ ['--i' as string]: 2, ['--r' as string]: '-1.5deg' }}>
                 <span className="block rounded-[0.85rem] bg-white px-2.5 pb-0.5">diaspora</span>
@@ -164,7 +198,7 @@ function Hero() {
             </span>
           </h1>
           <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-slate-600 sm:mt-6 sm:text-lg">
-            Cari bagasi kosong traveler atau pesan oleh-oleh dari personal shopper.
+            Marketplace jastip bagasi untuk diaspora Indonesia di Saudi dan Australia. Titip sambal, kurma, atau oleh-oleh lewat sisa bagasi traveler yang terverifikasi.
           </p>
 
           <HeroSearch />
@@ -187,18 +221,21 @@ function Hero() {
               ))}
             </div>
           </div>
+          <div className="mt-6 grid max-w-md grid-cols-3 gap-2.5">
+            <HeroStat value={String(open.filter((v) => v.listing.type === 'weight').length)} label="trip bagasi buka" />
+            <HeroStat value={String(new Set(views.map((v) => v.listing.ownerId)).size)} label="jastiper" />
+            <HeroStat value={avgRating ? avgRating.toFixed(1) : '-'} label="rating rata-rata" />
+          </div>
         </div>
 
-        <HeroVisualMobile open={open.length} providers={new Set(views.map((v) => v.listing.ownerId)).size} rating={avgRating} />
-        <HeroBubbles />
-        <HeroVisual open={open.length} providers={new Set(views.map((v) => v.listing.ownerId)).size} rating={avgRating} />
+        <TripDemo className="mx-auto w-full min-w-0 max-w-[460px] lg:mr-0" />
       </div>
       </div>
     </section>
   );
 }
 
-const SUGGESTIONS = ['Kurma', 'Cokelat', 'Batik', 'Abaya', 'Riyadh', 'Bagasi 20 kg'];
+const SUGGESTIONS = ['Riyadh', 'Sydney', 'Jeddah', 'Kurma', 'Sambal', 'Bagasi 20 kg'];
 
 const DIRECTIONS: [Direction, string][] = [
   ['SA-ID', 'Saudi → Indonesia'],
@@ -208,9 +245,9 @@ const DIRECTIONS: [Direction, string][] = [
   ['', 'Semua arah'],
 ];
 const TYPES: ['' | 'weight' | 'shopping', string, string][] = [
-  ['', 'Semua jenis', 'Bagasi dan belanja'],
-  ['weight', 'Jastip Bagasi', 'Titip di bagasi traveler'],
-  ['shopping', 'Jastip Belanja', 'Pesan lewat personal shopper'],
+  ['weight', 'Jastip Bagasi', 'Titip di sisa bagasi traveler, bayar per kg'],
+  ['shopping', 'Jastip Barang', 'Pre-order produk lewat personal shopper'],
+  ['', 'Semua jenis', 'Bagasi dan barang'],
 ];
 
 /** Small "Mulai cari" button that unfolds into a three-step picker: keyword, direction, type. */
@@ -269,7 +306,7 @@ function HeroSearch() {
             type="button"
             tabIndex={open ? -1 : 0}
             onClick={() => setOpen(true)}
-            className={cn('pointer-events-auto group relative flex h-16 items-center gap-4 rounded-full bg-teal-500 py-1.5 pl-1.5 pr-8 text-xl font-semibold text-navy-900 shadow-lift hover:bg-teal-400 transition duration-200 ease-spring hover:scale-[1.02] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2', open && 'pointer-events-none')}
+            className={cn('group relative flex h-16 items-center gap-4 rounded-full bg-teal-500 py-1.5 pl-1.5 pr-8 text-xl font-semibold text-navy-900 shadow-lift hover:bg-teal-400 transition duration-200 ease-spring hover:scale-[1.02] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2', !open && 'pointer-events-auto')}
           >
             <span aria-hidden className="cta-ring pointer-events-none absolute inset-0 rounded-full bg-teal-500" />
             <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-navy text-white transition-transform duration-300 ease-spring group-hover:rotate-12">
@@ -410,95 +447,6 @@ function Chip({ i, rot, className, children }: { i: number; rot: number; classNa
   );
 }
 
-const BUBBLES = [
-  { icon: Plane, tone: 'from-navy-400 to-navy-700', left: '4%', size: 52, delay: 0 },
-  { icon: ShoppingBag, tone: 'from-teal-300 to-teal-500', left: '22%', size: 44, delay: 0.8 },
-  { icon: Package, tone: 'from-navy-300 to-navy-600', left: '40%', size: 56, delay: 0.3 },
-  { icon: MapPin, tone: 'from-navy-400 to-navy-700', left: '58%', size: 46, delay: 1.1 },
-  { icon: Star, tone: 'from-teal-300 to-teal-500', left: '74%', size: 50, delay: 0.5 },
-  { icon: MessageCircle, tone: 'from-navy-300 to-navy-600', left: '88%', size: 44, delay: 1.4 },
-];
-
-/** Floating icon bubbles along the bottom edge of the hero (phones only). */
-function HeroBubbles() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-28 overflow-hidden sm:hidden">
-      {BUBBLES.map((b, i) => (
-        <span
-          key={i}
-          className={cn('bubble-float absolute flex items-center justify-center rounded-full bg-gradient-to-br text-white shadow-lift', b.tone)}
-          style={{ left: b.left, bottom: i % 2 ? -14 : 6, width: b.size, height: b.size, animationDelay: `${b.delay}s` }}
-        >
-          <span className="absolute left-[18%] top-[14%] h-[26%] w-[34%] rounded-full bg-white/50 blur-[1px]" />
-          <b.icon className="relative h-5 w-5" strokeWidth={2.2} />
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/** Stats and the shopping card, side by side, for phones. */
-function HeroVisualMobile({ open, providers, rating }: { open: number; providers: number; rating: number }) {
-  return (
-    <div className="relative -mt-2 h-48 lg:hidden" aria-hidden>
-      <div className="absolute left-0 top-12 grid w-[74%] grid-cols-3 gap-2.5">
-        <HeroStat value={String(open)} label="listing buka" />
-        <HeroStat value={String(providers)} label="penyedia" />
-        <HeroStat value={rating ? rating.toFixed(1) : '-'} label="rating" />
-      </div>
-      <div className="absolute right-0 top-0 w-[62%] rotate-[4deg] rounded-3xl bg-white p-3.5 text-navy shadow-lift">
-        <p className="inline-flex items-center gap-1.5 text-xs font-bold text-navy">
-          <ShoppingBag className="h-3.5 w-3.5 text-amber-600" /> Jastip Belanja · Jeddah
-        </p>
-        <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-          {['kurma', 'cokelat', 'fashion'].map((n) => (
-            <img key={n} src={`/images/${n}.webp`} alt="" className="aspect-square rounded-xl object-cover" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function HeroVisual({ open, providers, rating }: { open: number; providers: number; rating: number }) {
-  return (
-    <div className="relative hidden h-[27rem] lg:block" aria-hidden>
-      <div className="float-a absolute inset-x-2 top-0 rotate-[-3deg] rounded-3xl bg-white p-5 text-navy shadow-card">
-        <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-50 px-2.5 py-1 text-xs font-bold text-navy">
-            <Plane className="h-3.5 w-3.5 text-sky-600" /> Jastip Bagasi
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Buka
-          </span>
-        </div>
-        <p className="mt-4 flex items-center gap-2 text-2xl font-bold">
-          RUH <span className="text-teal-500">→</span> CGK
-        </p>
-        <p className="num mt-1 text-sm text-slate-500">Riyadh → Jakarta · Sisa 15 kg · 25 SAR/kg</p>
-        <div className="mt-3 h-2 rounded-full bg-slate-100">
-          <div className="bar-grow h-2 w-1/4 rounded-full bg-teal-500" />
-        </div>
-      </div>
-      <div className="absolute inset-x-0 top-[14.5rem] grid w-[84%] grid-cols-3 gap-3">
-        <HeroStat value={String(open)} label="listing buka" />
-        <HeroStat value={String(providers)} label="penyedia" />
-        <HeroStat value={rating ? rating.toFixed(1) : '-'} label="rating" />
-      </div>
-      <div className="float-b absolute right-0 top-[13.5rem] w-64 rotate-[4deg] rounded-3xl bg-white p-4 text-navy shadow-lift">
-        <p className="inline-flex items-center gap-1.5 text-xs font-bold text-navy">
-          <ShoppingBag className="h-3.5 w-3.5 text-amber-600" /> Jastip Belanja · Jeddah
-        </p>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {['kurma', 'cokelat', 'fashion'].map((n) => (
-            <img key={n} src={`/images/${n}.webp`} alt="" className="aspect-square rounded-xl object-cover" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function HeroStat({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-2xl bg-white p-3 shadow-card">
@@ -530,6 +478,7 @@ function PhotoTile({
   title,
   text,
   meta,
+  primary,
 }: {
   to: string;
   image: string;
@@ -537,6 +486,7 @@ function PhotoTile({
   title: string;
   text: string;
   meta: string;
+  primary?: boolean;
 }) {
   return (
     <Link
@@ -548,6 +498,7 @@ function PhotoTile({
         <span className="flex items-center gap-2 text-base font-semibold text-navy sm:text-lg">
           <span className="[&_svg]:h-5 [&_svg]:w-5">{icon}</span>
           {title}
+          {primary && <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-teal-800">Utama</span>}
         </span>
         <span className="mt-0.5 hidden text-sm text-slate-500 sm:block">{text}</span>
         <span className="num mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 sm:mt-2">
@@ -555,5 +506,159 @@ function PhotoTile({
         </span>
       </span>
     </Link>
+  );
+}
+
+function TrustPoint({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div className="flex gap-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 [&_svg]:h-[18px] [&_svg]:w-[18px]" aria-hidden>
+        {icon}
+      </span>
+      <p className="text-sm leading-snug text-slate-600">
+        <span className="block font-bold text-navy">{title}</span>
+        {text}
+      </p>
+    </div>
+  );
+}
+
+/** Promoted jastiper (paid placement, labelled as such). */
+function FeaturedProviders() {
+  const db = useDB();
+  const views = useListingViews();
+  const list = React.useMemo(() => {
+    const now = Date.now();
+    return db.users
+      .filter((u) => isPromoted(db.purchases, u.id, now))
+      .map((u) => {
+        const mine = db.reviews.filter((r) => r.providerId === u.id && (r.direction ?? 'to_provider') === 'to_provider');
+        return {
+          user: u,
+          pro: isPro(db.purchases, u.id, now),
+          trust: computeTrust(u, db, now),
+          rating: mine.length ? mine.reduce((a, r) => a + r.rating, 0) / mine.length : 0,
+          count: mine.length,
+          open: views.filter((v) => v.listing.ownerId === u.id && v.status === 'open').length,
+        };
+      })
+      .slice(0, 4);
+  }, [db, views]);
+  if (!list.length) return null;
+  return (
+    <section className="container pt-4 sm:pt-6" aria-labelledby="picks-title">
+      <div className="rounded-[2rem] bg-slate-100 p-4 sm:p-7">
+        <div className="mb-4 flex items-end justify-between gap-4 sm:mb-5">
+          <div>
+            <h2 id="picks-title" className="text-xl font-semibold text-navy sm:text-3xl">
+              Jastiper Pilihan
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">Penempatan berbayar (Promoted jastiper).</p>
+          </div>
+          <Link to="/harga" className="shrink-0 text-sm font-semibold text-teal-700 hover:underline">
+            Tampil di sini
+          </Link>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {list.map((p, i) => (
+            <Reveal as="li" i={i} key={p.user.id}>
+              <Link
+                to={`/providers/${p.user.id}`}
+                className="flex h-full flex-col gap-3 rounded-3xl bg-white p-4 shadow-card transition duration-200 ease-spring hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              >
+                <span className="flex items-center gap-3">
+                  <Avatar user={p.user} size={48} />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 truncate font-bold text-navy">
+                      {p.user.displayName} {p.pro && <ProBadge className="scale-90" />}
+                    </span>
+                    <span className="block text-[13px] text-slate-500">{p.user.city ?? '-'}</span>
+                  </span>
+                </span>
+                <span className="flex items-center gap-1.5 text-sm">
+                  {p.count ? (
+                    <>
+                      <StarRating value={p.rating} size={13} /> <span className="num font-semibold text-navy">{p.rating.toFixed(1)}</span>
+                      <span className="text-slate-500">({p.count})</span>
+                    </>
+                  ) : (
+                    <span className="text-slate-500">Belum ada rating</span>
+                  )}
+                </span>
+                <span className="mt-auto flex items-center justify-between text-[13px]">
+                  <span className="font-semibold text-teal-700">{p.open} trip buka</span>
+                  <span className="num text-slate-500">Skor {p.trust.score}</span>
+                </span>
+              </Link>
+            </Reveal>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+const CLIENT_NEXT: Record<string, string> = {
+  pending: 'Menunggu penyedia',
+  accepted: 'Serahkan barang',
+  handed_over: 'Bayar tagihan',
+  shipped: 'Dalam perjalanan',
+  delivered: 'Konfirmasi diterima',
+};
+
+/** Logged-in clients see their orders in progress first. */
+function ActiveOrders({ userId, name }: { userId: string; name: string }) {
+  const { inquiries, listings } = useDB();
+  const active = inquiries
+    .filter((i) => i.buyerId === userId && OPEN_ORDER_STATUSES.includes(i.status))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return (
+    <section className="container pt-4 sm:pt-6" aria-labelledby="mine-title">
+      <div className="rounded-[2rem] bg-teal-50 p-4 ring-1 ring-teal-100 sm:p-6">
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-teal-800">Halo, {name}</p>
+            <h2 id="mine-title" className="text-lg font-bold text-navy sm:text-xl">
+              {active.length ? `Pesanan aktif (${active.length})` : 'Belum ada pesanan aktif'}
+            </h2>
+          </div>
+          <Link to="/orders" className="shrink-0 text-sm font-semibold text-teal-800 hover:underline">
+            Semua pesanan
+          </Link>
+        </div>
+        {active.length ? (
+          <ul className="no-scrollbar -mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+            {active.slice(0, 6).map((i) => {
+              const l = listings.find((x) => x.id === i.listingId);
+              const actionable = ['handed_over', 'delivered'].includes(i.status) && i.payment?.status !== 'paid' ? true : i.status === 'delivered';
+              return (
+                <li key={i.id} className="w-[260px] shrink-0">
+                  <Link to={`/orders/${i.id}`} className="flex h-full flex-col gap-2 rounded-2xl bg-white p-4 shadow-card transition hover:shadow-lift">
+                    <span className="flex items-center justify-between gap-2">
+                      <InquiryStatusBadge status={i.status} />
+                      <span className="num text-xs text-slate-500">{formatMoneyGroups(inquiryTotals(i, l))}</span>
+                    </span>
+                    <span className="truncate font-bold text-navy">
+                      {l ? `${l.origin.city} → ${l.destination.city}` : 'Listing dihapus'}
+                    </span>
+                    <span className="text-[13px] text-slate-500">
+                      {l?.type === 'weight' ? formatKg(i.handover?.weightKg ?? i.requestedKg ?? 0) : `${(i.items ?? []).reduce((a, x) => a + x.quantity, 0)} item`}
+                    </span>
+                    <span className={cn('mt-auto text-[13px] font-semibold', actionable ? 'text-amber-700' : 'text-teal-800')}>{CLIENT_NEXT[i.status]} →</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-600">
+            Cari trip bagasi ke kota Anda, lalu request titipan.{' '}
+            <Link to="/explore?type=weight" className="font-semibold text-teal-800 underline">
+              Cari trip
+            </Link>
+          </p>
+        )}
+      </div>
+    </section>
   );
 }

@@ -24,7 +24,7 @@ import {
   type ValidationContext,
 } from '@/lib/listingForm';
 import { formatDate, formatKg, formatMoney, formatProductPrice } from '@/lib/format';
-import { createListing, updateListing } from '@/services/listingService';
+import { createListing, LIMIT_ERROR, updateListing } from '@/services/listingService';
 import { todayKey } from '@/lib/dates';
 import { cn, uuid } from '@/lib/utils';
 
@@ -129,9 +129,19 @@ export function ListingWizard({ mode, initial, userId, listing, ctx, onBackToTyp
     const payload = payloadFromForm(form);
     const res =
       mode === 'create' ? createListing(userId, payload, true) : updateListing(listing!.id, userId, payload, true);
-    if (!res.ok) return toast.error(res.error);
+    if (!res.ok) {
+      if (res.error === LIMIT_ERROR)
+        return toast.error('Batas 1 trip aktif tercapai', {
+          description: 'Simpan sebagai draf, tutup trip lain, beli slot listing Rp50.000, atau upgrade ke Jastiper Pro.',
+          action: { label: 'Lihat paket', onClick: () => navigate('/harga') },
+          duration: 9000,
+        });
+      return toast.error(res.error);
+    }
     setDirty(false);
-    toast.success(mode === 'create' || listing?.status === 'draft' ? 'Listing diterbitkan' : 'Perubahan disimpan');
+    toast.success(mode === 'create' || listing?.status === 'draft' ? 'Trip diterbitkan' : 'Perubahan disimpan', {
+      description: res.data.paidSlot && mode === 'create' ? 'Memakai 1 slot listing berbayar.' : 'Bagikan ke grup WhatsApp diaspora dari halaman trip.',
+    });
     navigate(`/listings/${res.data.id}`);
   };
 
@@ -140,7 +150,7 @@ export function ListingWizard({ mode, initial, userId, listing, ctx, onBackToTyp
     const res = mode === 'create' ? createListing(userId, payload, false) : updateListing(listing!.id, userId, payload, false);
     if (!res.ok) return toast.error(res.error);
     setDirty(false);
-    toast.success('Draf disimpan', { description: 'Lanjutkan kapan saja dari Listing Saya → Draf.' });
+    toast.success('Draf disimpan', { description: 'Lanjutkan kapan saja dari Trip saya → Draf.' });
     navigate('/my-listings?tab=draft');
   };
 

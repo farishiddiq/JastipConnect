@@ -1,12 +1,25 @@
 import type { Currency, Inquiry, InquiryStatus, Listing, ListingStatus, Product, ShoppingListing, WeightListing } from '@/types';
 import { daysUntil } from './dates';
 
-/** Inquiry states that consume capacity / stock. Pending does not reserve. */
-export const RESERVING_STATUSES: InquiryStatus[] = ['accepted', 'completed'];
-/** Inquiry states that are still "in flight" and block destructive edits. */
-export const ACTIVE_STATUSES: InquiryStatus[] = ['pending', 'accepted', 'completed'];
+/** Order states that consume capacity / stock. Pending only while its 24-hour hold is running. */
+export const RESERVING_STATUSES: InquiryStatus[] = ['pending', 'accepted', 'handed_over', 'shipped', 'delivered', 'completed'];
+/** Order states that are still "in flight" and block destructive edits. */
+export const ACTIVE_STATUSES: InquiryStatus[] = RESERVING_STATUSES;
+/** Orders the provider is still working on. */
+export const OPEN_ORDER_STATUSES: InquiryStatus[] = ['pending', 'accepted', 'handed_over', 'shipped', 'delivered'];
 
-const reserves = (i: Inquiry) => RESERVING_STATUSES.includes(i.status);
+export const PENDING_HOLD_HOURS = 24;
+
+export function isHoldActive(i: Inquiry, now = Date.now()): boolean {
+  if (i.status !== 'pending') return false;
+  return !i.holdExpiresAt || new Date(i.holdExpiresAt).getTime() > now;
+}
+
+export const reserves = (i: Inquiry, now = Date.now()) =>
+  i.status === 'pending' ? isHoldActive(i, now) : RESERVING_STATUSES.includes(i.status);
+
+/** Kilos an order takes up: the weighed amount once handed over, otherwise the estimate. */
+export const orderKg = (i: Inquiry) => i.handover?.weightKg ?? i.requestedKg ?? 0;
 
 export function inquiriesFor(listingId: string, inquiries: Inquiry[]): Inquiry[] {
   return inquiries.filter((i) => i.listingId === listingId);
@@ -14,8 +27,17 @@ export function inquiriesFor(listingId: string, inquiries: Inquiry[]): Inquiry[]
 
 export function reservedKg(listing: WeightListing, inquiries: Inquiry[]): number {
   return inquiriesFor(listing.id, inquiries)
-    .filter(reserves)
-    .reduce((sum, i) => sum + (i.requestedKg ?? 0), 0);
+    .filter((i) => reserves(i))
+    .reduce((sum, i) => sum + orderKg(i), 0);
+}
+
+/** Kilos held by pending requests that the provider has not answered yet. */
+export function heldKg(listing: WeightListing, inquiries: Inquiry[]): number {
+  return round1(
+    inquiriesFor(listing.id, inquiries)
+      .filter((i) => isHoldActive(i))
+      .reduce((sum, i) => sum + orderKg(i), 0),
+  );
 }
 
 export function remainingKg(listing: WeightListing, inquiries: Inquiry[]): number {
@@ -24,7 +46,7 @@ export function remainingKg(listing: WeightListing, inquiries: Inquiry[]): numbe
 
 export function reservedQty(listingId: string, productId: string, inquiries: Inquiry[]): number {
   return inquiriesFor(listingId, inquiries)
-    .filter(reserves)
+    .filter((i) => reserves(i))
     .flatMap((i) => i.items ?? [])
     .filter((l) => l.productId === productId)
     .reduce((s, l) => s + l.quantity, 0);
@@ -68,14 +90,21 @@ export function effectiveStatus(listing: Listing, inquiries: Inquiry[]): Listing
 }
 
 export type AvailabilitySummary =
-  | { type: 'weight'; total: number; reserved: number; remaining: number; ratio: number }
+  | { type: 'weight'; total: number; reserved: number; remaining: number; ratio: number; held: number }
   | { type: 'shopping'; total: number; reserved: number; remaining: number; ratio: number; productsLeft: number };
 
 export function availabilitySummary(listing: Listing, inquiries: Inquiry[]): AvailabilitySummary {
   if (listing.type === 'weight') {
     const reserved = reservedKg(listing, inquiries);
     const remaining = remainingKg(listing, inquiries);
-    return { type: 'weight', total: listing.capacityKg, reserved, remaining, ratio: listing.capacityKg ? reserved / listing.capacityKg : 0 };
+    return {
+      type: 'weight',
+      total: listing.capacityKg,
+      reserved,
+      remaining,
+      held: heldKg(listing, inquiries),
+      ratio: listing.capacityKg ? reserved / listing.capacityKg : 0,
+    };
   }
   const av = productAvailability(listing, inquiries);
   const total = av.reduce((s, a) => s + a.product.quantityAvailable, 0);
@@ -103,9 +132,10 @@ export function referencePrice(listing: Listing): { amount: number; currency: Cu
 }
 
 export function inquiryTotals(inquiry: Inquiry, listing: Listing | undefined): Partial<Record<Currency, number>> {
+  if (typeof inquiry.amountDue === 'number' && inquiry.amountCurrency) return { [inquiry.amountCurrency]: inquiry.amountDue };
   if (!listing) return {};
   if (listing.type === 'weight') {
-    return { [listing.currency]: round2((inquiry.requestedKg ?? 0) * listing.pricePerKg) };
+    return { [listing.currency]: round2(orderKg(inquiry) * listing.pricePerKg) };
   }
   const totals: Partial<Record<Currency, number>> = {};
   for (const line of inquiry.items ?? []) {

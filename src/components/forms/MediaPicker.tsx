@@ -7,7 +7,7 @@ const MAX_IMAGE_EDGE = 640;
 const MAX_VIDEO_BYTES = 900_000;
 
 /** Shrinks a photo to a small JPEG data URL so it fits in browser storage. */
-async function compressImage(file: File): Promise<string> {
+export async function compressImage(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');

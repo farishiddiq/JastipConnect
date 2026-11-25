@@ -12,27 +12,36 @@ export const REPORT_REASONS = [
   'Lainnya',
 ];
 
-export function createReview(inquiryId: string, buyerId: string, rating: number): Result<Review> {
-  const { inquiries, reviews } = store.getState();
+/** Ratings go both ways after delivery: the client rates the provider, the provider rates the client. */
+export const RATEABLE = ['delivered', 'completed'];
+
+export function createReview(inquiryId: string, actorId: string, rating: number): Result<Review> {
+  const { inquiries, reviews, users } = store.getState();
   const inquiry = inquiries.find((i) => i.id === inquiryId);
-  if (!inquiry) return fail('Inquiry tidak ditemukan.');
-  if (inquiry.buyerId !== buyerId) return fail('Hanya pembeli yang dapat memberi ulasan.');
-  if (inquiry.status !== 'completed') return fail('Ulasan hanya bisa diberikan setelah transaksi selesai.');
-  if (reviews.some((r) => r.inquiryId === inquiryId)) return fail('Anda sudah memberi ulasan untuk transaksi ini.');
+  if (!inquiry) return fail('Order tidak ditemukan.');
+  const isBuyer = inquiry.buyerId === actorId;
+  const isProvider = inquiry.providerId === actorId;
+  if (!isBuyer && !isProvider) return fail('Anda bukan peserta order ini.');
+  const direction = isBuyer ? 'to_provider' : 'to_client';
+  if (!RATEABLE.includes(inquiry.status)) return fail('Rating bisa diberikan setelah titipan sampai.');
+  if (reviews.some((r) => r.inquiryId === inquiryId && (r.direction ?? 'to_provider') === direction)) return fail('Anda sudah memberi rating untuk order ini.');
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return fail('Pilih rating 1 sampai 5 bintang.');
 
   const review: Review = {
     id: uuid(),
     inquiryId,
     providerId: inquiry.providerId,
-    buyerId,
+    buyerId: inquiry.buyerId,
     rating,
+    direction,
     createdAt: nowIso(),
   };
+  const target = isBuyer ? inquiry.providerId : inquiry.buyerId;
+  const actorName = users.find((u) => u.id === actorId)?.displayName ?? 'Pengguna';
   const saved = store.transaction({
     reviews: (prev) => [review, ...prev],
     notifications: (prev) => [
-      makeNotification(inquiry.providerId, 'Ulasan baru', `Anda menerima ulasan ${rating} bintang.`, `/providers/${inquiry.providerId}`),
+      makeNotification(target, 'Rating baru', `${actorName} memberi Anda rating ${rating} bintang.`, isBuyer ? `/providers/${target}` : `/orders/${inquiryId}`),
       ...prev,
     ],
   });

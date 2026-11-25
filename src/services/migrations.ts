@@ -1,7 +1,12 @@
-import type { Listing, Review, ShoppingListing, WeightListing } from '@/types';
+import type { Inquiry, Listing, Review, ShoppingListing, User, WeightListing } from '@/types';
 
-/** v2: one-way bagasi, optional belanja dates and product fields, Australia corridor, star-only reviews. */
-export const SCHEMA_VERSION = 2;
+/**
+ * v2: one-way bagasi, optional belanja dates and product fields, Australia corridor, star-only reviews.
+ * v3: order lifecycle with holds, handover and payment records; provider verification; plans.
+ * v4: new demo dataset (5 providers, 10 clients, one month of activity); older data is re-seeded once.
+ * v5: two-way ratings and structured Bagasi requests in the seed (same one-time re-seed).
+ */
+export const SCHEMA_VERSION = 5;
 
 /** Seed records added in v2. Merged into older data by id, never overwriting anything. */
 export const V2_SEED_USER_IDS = ['u-dewi', 'u-andi'];
@@ -39,4 +44,27 @@ export function migrateReview(raw: Review): Review | null {
   delete r.comment;
   if (!Number.isInteger(r.rating) || (r.rating as number) < 1 || (r.rating as number) > 5) return null;
   return r as unknown as Review;
+}
+
+/** Idempotent. Gives v2 pending requests a fresh 24-hour hold instead of expiring them on upgrade. */
+export function migrateInquiry(raw: Inquiry): Inquiry {
+  if (!isObj(raw)) return raw;
+  if (raw.status === 'pending' && !raw.holdExpiresAt) {
+    return { ...raw, holdExpiresAt: new Date(Date.now() + 24 * 3_600_000).toISOString() };
+  }
+  if (raw.status === 'completed' && !raw.completedAt) return { ...raw, completedAt: raw.updatedAt };
+  return raw;
+}
+
+/** Adds v3 seed fields (email, verified WhatsApp) to an existing seed user without overwriting edits. */
+export function mergeSeedUser(user: User, seed: User | undefined): User {
+  if (!seed) return user;
+  return {
+    ...user,
+    email: user.email ?? seed.email,
+    termsAcceptedAt: user.termsAcceptedAt ?? seed.termsAcceptedAt,
+    phone: user.phone ?? seed.phone,
+    phoneVerifiedAt: user.phoneVerifiedAt ?? seed.phoneVerifiedAt,
+    providerSince: user.providerSince ?? seed.providerSince,
+  };
 }
